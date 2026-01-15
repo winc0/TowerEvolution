@@ -1,4 +1,4 @@
-#include "include/placementvalidator.h"
+#include "placementvalidator.h"
 #include <QDebug>
 
 PlacementValidator::PlacementValidator()

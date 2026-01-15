@@ -1,10 +1,8 @@
-#include "include/enemy.h"
-#include "include/resourcemanager.h"
-#include "include/config.h"
+#include "enemy.h"
+#include "resourcemanager.h"
+#include "config.h"
 
-#include <QPainter>
-#include <QBrush>
-#include <QPen>
+#include <QTimer>
 #include <cmath>
 
 Enemy::Enemy(int enemyType, QObject *parent)
@@ -16,10 +14,11 @@ Enemy::Enemy(int enemyType, QObject *parent)
     , reachedEnd(false)
     , currentState(ResourceManager::ENEMY_WALK)
 {
-    setHealth(GameConfig::ENEMY_HEALTH);
+    maxHealth = GameConfig::ENEMY_HEALTH;
+    currentHealth = maxHealth;
 
     // 从资源文件加载敌人图片
-    ResourceManager& rm = ResourceManager::instance();
+    ResourceManager &rm = ResourceManager::instance();
     setPixmap(rm.getEnemyPixmap(enemyType, currentState));
 
     // 移动计时器
@@ -30,7 +29,7 @@ Enemy::Enemy(int enemyType, QObject *parent)
 
 Enemy::~Enemy()
 {
-    moveTimer->stop();
+    if (moveTimer) moveTimer->stop();
 }
 
 void Enemy::update()
@@ -51,34 +50,39 @@ QPointF Enemy::getCenterPosition() const
 {
     QPointF topLeft = pos();
     QRectF rect = boundingRect();
-    return QPointF(topLeft.x() + rect.width() / 2.0, topLeft.y() + rect.height() / 2.0);
+    return QPointF(topLeft.x() + rect.width() / 2.0,
+                   topLeft.y() + rect.height() / 2.0);
 }
 
 void Enemy::moveAlongPath()
 {
     if (reachedEnd || pathPoints.isEmpty() || currentPathIndex >= pathPoints.size()) {
         reachedEnd = true;
+        velocity = QPointF(0,0);
         return;
     }
 
     QPointF currentPos = pos();
     QPointF targetPos = pathPoints[currentPathIndex];
-    QPointF direction = targetPos - currentPos;
-    qreal distance = QLineF(currentPos, targetPos).length();
+    QPointF dir = targetPos - currentPos;
+    qreal distance = std::sqrt(dir.x()*dir.x() + dir.y()*dir.y());
 
-    if (distance < speed) {
-        // 到达路径点
+    if (distance > 0) {
+        velocity = dir / distance * speed;
+    } else {
+        velocity = QPointF(0,0);
+    }
+
+    if(distance < speed) {
         setPos(targetPos);
         currentPathIndex++;
-
-        if (currentPathIndex >= pathPoints.size()) {
+        if(currentPathIndex >= pathPoints.size()) {
             reachedEnd = true;
-            emit reachedEndPoint(); // 需要添加信号声明
+            velocity = QPointF(0,0);
+            emit reachedEndPoint();
         }
     } else {
-        // 向目标移动
-        direction /= distance;
-        setPos(currentPos + direction * speed);
+        setPos(currentPos + velocity);
     }
 }
 
@@ -89,20 +93,29 @@ void Enemy::onMoveTimer()
 
 void Enemy::setState(EnemyState state)
 {
-    if (currentState == state) {
-        return; // 状态未变化
-    }
-    
+    if (currentState == state)
+        return;
+
     currentState = state;
-    
-    // 敌人死亡时停止移动
+
     if (state == ResourceManager::ENEMY_DEAD) {
-        if (moveTimer) {
-            moveTimer->stop();
-        }
+        if (moveTimer) moveTimer->stop();
     }
-    
-    // 根据新状态更新图片
-    ResourceManager& rm = ResourceManager::instance();
+
+    // 更新贴图
+    ResourceManager &rm = ResourceManager::instance();
     setPixmap(rm.getEnemyPixmap(enemyType, currentState));
+}
+
+void Enemy::takeDamage(int amount)
+{
+    if (currentState == ResourceManager::ENEMY_DEAD)
+        return;
+
+    currentHealth -= amount;
+    if (currentHealth <= 0) {
+        currentHealth = 0;
+        setState(ResourceManager::ENEMY_DEAD);
+        emit enemyKilled(reward);
+    }
 }

@@ -1,8 +1,8 @@
-#include "include/tower.h"
-#include "include/enemy.h"
-#include "include/bullet.h"
-#include "include/resourcemanager.h"
-#include "include/config.h"
+#include "tower.h"
+#include "enemy.h"
+#include "bullet.h"
+#include "resourcemanager.h"
+#include "config.h"
 
 #include <QPainter>
 #include <QBrush>
@@ -12,6 +12,11 @@
 #include <QDebug>
 #include <math.h>
 #include <cmath>
+#include <random>
+#include <cstdlib>  // 添加这个
+#include <ctime>    // 用于初始化随机种子
+
+
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -108,27 +113,45 @@ void Tower::setTarget(QPointer<Enemy> target)
 
 void Tower::fire()
 {
-    if (currentTarget && gameScene)
+    if (!currentTarget || !gameScene)
+        return;
+
+    QPointF towerCenter = mapToScene(transformOriginPoint());
+
+    // 1. 计算敌人速度（像素/帧）
+    QPointF enemyVel(0,0);
+    if(currentTarget->getPathPoints().size() > 1)
     {
-        QPointF bulletStartPos = mapToScene(transformOriginPoint());
-
-        qDebug() << "Tower firing from center" << bulletStartPos;
-
-        // 创建子弹对象
-        QPointer<Bullet> bullet = new Bullet(bulletStartPos, currentTarget, damage, nullptr);
-        if (bullet)
+        int idx = currentTarget->getCurrentPathIndex();
+        if(idx < currentTarget->getPathPoints().size())
         {
-            gameScene->addItem(bullet);
-            targetLocked = true;
-            targetLockTimer.restart();
-            emit fired();
-        }
-        else
-        {
-            qWarning() << "Failed to create bullet";
+            QPointF nextPoint = currentTarget->getPathPoints()[idx];
+            enemyVel = (nextPoint - currentTarget->pos()) / GameConfig::ENEMY_MOVE_INTERVAL;
         }
     }
+
+    // 2. 预测敌人位置
+    QPointF toEnemy = currentTarget->pos() - towerCenter;
+    qreal distance = std::sqrt(toEnemy.x()*toEnemy.x() + toEnemy.y()*toEnemy.y());
+    qreal timeToHit = distance / GameConfig::BULLET_SPEED; // 毫秒？
+
+    QPointF predictedPos = currentTarget->pos() + enemyVel * timeToHit;
+
+    // 3. 加少量随机误差
+    int missRadius = 10; // 可以调整
+    predictedPos += QPointF((rand() % (missRadius*2)) - missRadius,
+                            (rand() % (missRadius*2)) - missRadius);
+
+    // 4. 创建子弹，飞向 predictedPos
+    QPointer<Enemy> targetEnemy = currentTarget; // 目标敌人
+    Bullet *bullet = new Bullet(towerCenter, targetEnemy, damage, this);
+    gameScene->addItem(bullet);
+
+
+    emit fired();
 }
+
+
 
 void Tower::setEnemiesInRange(const QList<QPointer<Enemy>> &enemies)
 {

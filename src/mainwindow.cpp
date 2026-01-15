@@ -1,7 +1,7 @@
-#include "include/config.h"
-#include "include/mainwindow.h"
-#include "include/gamepage.h"
-#include "include/mainmenupage.h"
+#include "config.h"
+#include "mainwindow.h"
+#include "gamepage.h"
+#include "mainmenupage.h"
 
 #include <ui_mainwindow.h>
 #include <QVBoxLayout>

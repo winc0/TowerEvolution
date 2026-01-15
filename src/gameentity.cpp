@@ -1,4 +1,4 @@
-#include "include/gameentity.h"
+#include "gameentity.h"
 
 GameEntity::GameEntity(EntityType type, QObject *parent)
     : QObject(parent), QGraphicsPixmapItem()

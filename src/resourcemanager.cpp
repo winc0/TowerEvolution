@@ -1,5 +1,5 @@
-#include "include/resourcemanager.h"
-#include "include/config.h"
+#include "resourcemanager.h"
+#include "config.h"
 
 #include <QPainter>
 #include <QPen>

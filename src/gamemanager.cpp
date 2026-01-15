@@ -1,5 +1,5 @@
-﻿#include "include/gamemanager.h"
-#include "include/resourcemanager.h"
+﻿#include "gamemanager.h"
+#include "resourcemanager.h"
 
 #include <cmath>
 
@@ -62,6 +62,21 @@ void GameManager::pauseGame()
         gameTimer->start(16);
         enemySpawnTimer->start(getWaveSpawnInterval());
     }
+
+    emit gameStateChanged(gameRunning, paused);
+}
+
+void GameManager::resumeGame()
+{
+    if (!gameRunning || !paused)
+        return;
+
+    paused = false;
+
+    if (gameTimer)
+        gameTimer->start(16);  // 恢复游戏主循环
+    if (enemySpawnTimer)
+        enemySpawnTimer->start(getWaveSpawnInterval()); // 恢复敌人生成
 
     emit gameStateChanged(gameRunning, paused);
 }

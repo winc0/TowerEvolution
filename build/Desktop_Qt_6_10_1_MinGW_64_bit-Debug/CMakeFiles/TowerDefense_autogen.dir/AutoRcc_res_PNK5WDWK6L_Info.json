@@ -1,0 +1,32 @@
+{
+	"BUILD_DIR" : "C:/Users/16513/Documents/qt-project/build/Desktop_Qt_6_10_1_MinGW_64_bit-Debug/TowerDefense_autogen",
+	"CMAKE_BINARY_DIR" : "C:/Users/16513/Documents/qt-project/build/Desktop_Qt_6_10_1_MinGW_64_bit-Debug",
+	"CMAKE_CURRENT_BINARY_DIR" : "C:/Users/16513/Documents/qt-project/build/Desktop_Qt_6_10_1_MinGW_64_bit-Debug",
+	"CMAKE_CURRENT_SOURCE_DIR" : "C:/Users/16513/Documents/qt-project",
+	"CMAKE_SOURCE_DIR" : "C:/Users/16513/Documents/qt-project",
+	"CROSS_CONFIG" : false,
+	"GENERATOR" : "Ninja",
+	"INCLUDE_DIR" : "C:/Users/16513/Documents/qt-project/build/Desktop_Qt_6_10_1_MinGW_64_bit-Debug/TowerDefense_autogen/include",
+	"INPUTS" : 
+	[
+		"C:/Users/16513/Documents/qt-project/res/map.png",
+		"C:/Users/16513/Documents/qt-project/res/bullet.png",
+		"C:/Users/16513/Documents/qt-project/res/enemy_dead.png",
+		"C:/Users/16513/Documents/qt-project/res/enemy_walk.png",
+		"C:/Users/16513/Documents/qt-project/res/enemy_idle.png",
+		"C:/Users/16513/Documents/qt-project/res/enemy_jump.png",
+		"C:/Users/16513/Documents/qt-project/res/tower.png",
+		"C:/Users/16513/Documents/qt-project/res/towerbase.png"
+	],
+	"LOCK_FILE" : "C:/Users/16513/Documents/qt-project/build/Desktop_Qt_6_10_1_MinGW_64_bit-Debug/CMakeFiles/TowerDefense_autogen.dir/AutoRcc_res_PNK5WDWK6L_Lock.lock",
+	"MULTI_CONFIG" : false,
+	"OPTIONS" : [ "--no-zstd", "-name", "res" ],
+	"OUTPUT_CHECKSUM" : "PNK5WDWK6L",
+	"OUTPUT_NAME" : "qrc_res.cpp",
+	"RCC_EXECUTABLE" : "D:/qt/6.10.1/mingw_64/bin/rcc.exe",
+	"RCC_LIST_OPTIONS" : [ "--list" ],
+	"SETTINGS_FILE" : "C:/Users/16513/Documents/qt-project/build/Desktop_Qt_6_10_1_MinGW_64_bit-Debug/CMakeFiles/TowerDefense_autogen.dir/AutoRcc_res_PNK5WDWK6L_Used.txt",
+	"SOURCE" : "C:/Users/16513/Documents/qt-project/res/res.qrc",
+	"USE_BETTER_GRAPH" : true,
+	"VERBOSITY" : 0
+}

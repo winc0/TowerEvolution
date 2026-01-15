@@ -24,16 +24,16 @@ public:
                     const QVector<QPointF> &pathPoints,
                     const QVector<GameConfig::EndPointConfig> &endPoints);
 
-    void startGame();
-    void pauseGame();
-    void resetGame();
-
-    int getGold() const { return gold; }
-    int getLives() const { return lives; }
-    int getCurrentWave() const { return currentWave; }
-    int getKillCount() const { return killCount; }
-    bool isGameRunning() const { return gameRunning; }
-    bool isPaused() const { return paused; }
+    void startGame(); // 开始游戏
+    void pauseGame(); // 暂停
+    void resetGame(); // 重新开始
+    void resumeGame(); // 继续游戏
+    int getGold() const { return gold; } // 获取金币
+    int getLives() const { return lives; } // 获取生命值
+    int getCurrentWave() const { return currentWave; } // 当前波次
+    int getKillCount() const { return killCount; } // 击杀敌人数量
+    bool isGameRunning() const { return gameRunning; } // 游戏是否运行
+    bool isPaused() const { return paused; } // 是否暂停
 
     const QList<QPointer<Enemy>> &getEnemies() const { return enemies; }
     const QList<QPointer<Tower>> &getTowers() const { return towers; }

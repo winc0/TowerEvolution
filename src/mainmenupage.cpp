@@ -1,6 +1,6 @@
-#include "include/config.h"
-#include "include/mainmenupage.h"
-#include "include/resourcemanager.h"
+#include "config.h"
+#include "mainmenupage.h"
+#include "resourcemanager.h"
 
 #include <QPushButton>
 #include <QLabel>

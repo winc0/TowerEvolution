@@ -1,0 +1,5 @@
+C:/Users/16513/Documents/qt-project/build/Desktop_Qt_6_10_1_MinGW_64_bit-Debug/CMakeFiles/TowerDefense.dir
+C:/Users/16513/Documents/qt-project/build/Desktop_Qt_6_10_1_MinGW_64_bit-Debug/CMakeFiles/edit_cache.dir
+C:/Users/16513/Documents/qt-project/build/Desktop_Qt_6_10_1_MinGW_64_bit-Debug/CMakeFiles/rebuild_cache.dir
+C:/Users/16513/Documents/qt-project/build/Desktop_Qt_6_10_1_MinGW_64_bit-Debug/CMakeFiles/TowerDefense_autogen_timestamp_deps.dir
+C:/Users/16513/Documents/qt-project/build/Desktop_Qt_6_10_1_MinGW_64_bit-Debug/CMakeFiles/TowerDefense_autogen.dir

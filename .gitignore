@@ -1,75 +1,68 @@
-# This file is used to ignore files which are generated
-# ----------------------------------------------------------------------------
+# Build folders
+build/
+cmake-build-*/
 
-*~
-*.autosave
-*.a
-*.core
+# Qt Creator
+*.pro.user
+*.pro.user.* 
+*.qbs.user
+*.creator.user
+*.qmlproject.user
+
+# CMake temporary files
+CMakeFiles/
+CMakeCache.txt
+*.cmake
 *.moc
-*.o
-*.obj
-*.orig
-*.rej
-*.so
-*.so.*
-*_pch.h.cpp
-*_resource.rc
-*.qm
-.#*
-*.*#
-core
-!core/
-tags
-.DS_Store
-.directory
-*.debug
-Makefile*
-*.prl
-*.app
+Makefile
+
+# Qt generated files
 moc_*.cpp
 ui_*.h
 qrc_*.cpp
+*_autogen/
+*_autogen/mocs_compilation.cpp
+
+# OS files
+.DS_Store
 Thumbs.db
-*.res
-*.rc
-/.qmake.cache
-/.qmake.stash
 
-# qtcreator generated files
-*.pro.user*
-
-# xemacs temporary files
-*.flc
-
-# Vim temporary files
-.*.swp
-
-# Visual Studio generated files
-*.ib_pdb_index
-*.idb
-*.ilk
-*.pdb
-*.sln
-*.suo
-*.vcproj
-*vcproj.*.*.user
-*.ncb
-*.sdf
-*.opensdf
-*.vcxproj
-*vcxproj.*
-
-# MinGW generated files
-*.Debug
-*.Release
-
-# Python byte code
-*.pyc
-
-# Binaries
-# --------
-*.dll
+# Executables
 *.exe
+*.out
+*.o
+*.obj
+# Build folders
+build/
+cmake-build-*/
 
-# Startwith .
-\.*
+# Qt Creator
+*.pro.user
+*.pro.user.* 
+*.qbs.user
+*.creator.user
+*.qmlproject.user
+
+# CMake temporary files
+CMakeFiles/
+CMakeCache.txt
+*.cmake
+*.moc
+Makefile
+
+# Qt generated files
+moc_*.cpp
+ui_*.h
+qrc_*.cpp
+*_autogen/
+*_autogen/mocs_compilation.cpp
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Executables
+*.exe
+*.out
+*.o
+*.obj

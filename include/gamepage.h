@@ -38,35 +38,41 @@ signals:
     void returnToMainMenu();
 
 public slots:
+
 protected:
     void mouseMoveEvent(QMouseEvent *event) override;
     bool eventFilter(QObject *obj, QEvent *event) override;
+    void mousePressEvent(QMouseEvent *event) override;
+
 private:
+    // UI & 游戏逻辑
     void initGameScene();
     void initUI();
     void createPath();
     void showGameOverDialog();
 
-    // 绘制游戏元素
+    // 绘制
     void drawBackground();
     void drawGrid();
-
-    // 游戏逻辑（UI 相关）
     void updateHoverHighlight(const QPointF &scenePos);
     void initPlacementValidator();
     void drawPlacementAreas();
     void showFloatingTip(const QString &text, const QPointF &scenePos, const QColor &color);
-    
+
     // 敌人管理
     void pauseAllEnemies();
     void resumeAllEnemies();
-    
+
     // 塔和子弹管理
     void pauseAllTowersAndBullets();
     void resumeAllTowersAndBullets();
 
-    // 鼠标事件
-    void mousePressEvent(QMouseEvent *event) override;
+    // 暂停菜单
+    void showPauseMenu();
+    void hidePauseMenu();
+    QWidget *pauseOverlay = nullptr;
+    QWidget *pausePanel = nullptr;
+
 
     // 游戏状态
     QGraphicsScene *gameScene;
