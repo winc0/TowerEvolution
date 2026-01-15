@@ -51,10 +51,23 @@ Tower::Tower(TowerType type, QPointF position, QObject *parent)
         break;
     }
 
-    // 从资源文件加载塔的图片
+    int visualLevel = 1;
+    switch (type)
+    {
+    case ARROW_TOWER:
+        visualLevel = 1;
+        break;
+    case CANNON_TOWER:
+        visualLevel = 2;
+        break;
+    case MAGIC_TOWER:
+        visualLevel = 3;
+        break;
+    }
+
     ResourceManager &rm = ResourceManager::instance();
-    QPixmap towerPixmap = rm.getTowerPixmap();
-    QPixmap basePixmap = rm.getTowerBasePixmap();
+    QPixmap towerPixmap = rm.getTowerPixmapForType(static_cast<int>(type), visualLevel);
+    QPixmap basePixmap = rm.getTowerBasePixmapForType(static_cast<int>(type), visualLevel);
 
     setPixmap(towerPixmap);
     // 设置图片的中心为旋转中心
@@ -115,7 +128,21 @@ void Tower::fire()
         qDebug() << "Tower firing from center" << bulletStartPos;
 
         // 创建子弹对象
-        QPointer<Bullet> bullet = new Bullet(bulletStartPos, currentTarget, damage, nullptr);
+        Bullet::BulletType bulletType = Bullet::BULLET_ARROW;
+        switch (towerType)
+        {
+        case ARROW_TOWER:
+            bulletType = Bullet::BULLET_ARROW;
+            break;
+        case CANNON_TOWER:
+            bulletType = Bullet::BULLET_CANNON;
+            break;
+        case MAGIC_TOWER:
+            bulletType = Bullet::BULLET_MAGIC;
+            break;
+        }
+
+        QPointer<Bullet> bullet = new Bullet(bulletType, bulletStartPos, currentTarget, damage, nullptr);
         if (bullet)
         {
             gameScene->addItem(bullet);

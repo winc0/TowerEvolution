@@ -56,6 +56,7 @@ private:
     void initPlacementValidator();
     void drawPlacementAreas();
     void showFloatingTip(const QString &text, const QPointF &scenePos, const QColor &color);
+    void showUpgradeEffect(const QPointF &scenePos);
     
     // 敌人管理
     void pauseAllEnemies();

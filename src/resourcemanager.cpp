@@ -196,7 +196,7 @@ QPixmap ResourceManager::getBulletPixmap() const
     {
         return getDefaultBulletPixmap();
     }
-    return bulletPixmap.scaled(GameConfig::GRID_SIZE / 2, GameConfig::GRID_SIZE / 2, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+    return bulletPixmap.scaled(GameConfig::GRID_SIZE, GameConfig::GRID_SIZE, Qt::KeepAspectRatio, Qt::SmoothTransformation);
 }
 
 QPixmap ResourceManager::getDefaultBulletPixmap() const
@@ -207,6 +207,159 @@ QPixmap ResourceManager::getDefaultBulletPixmap() const
     painter.setBrush(QBrush(Qt::yellow));
     painter.setPen(QPen(QColor(255, 165, 0), 1));
     painter.drawEllipse(0, 0, 10, 10);
+    return pixmap;
+}
+
+QPixmap ResourceManager::getTowerPixmapForType(int towerType, int level)
+{
+    QString cacheKey = QString("tower_%1_lvl%2").arg(towerType).arg(level);
+    if (pixmapCache.contains(cacheKey))
+    {
+        return pixmapCache.value(cacheKey);
+    }
+
+    QString baseName;
+    switch (towerType)
+    {
+    case TOWER_ARROW:
+        baseName = "arrow_tower";
+        break;
+    case TOWER_CANNON:
+        baseName = "cannon_tower";
+        break;
+    case TOWER_MAGIC:
+        baseName = "magic_tower";
+        break;
+    default:
+        return getDefaultTowerPixmap();
+    }
+
+    QPixmap pixmap;
+
+    if (level > 1)
+    {
+        QString levelPath = QString(":/image/tower/%1_lvl%2.png").arg(baseName).arg(level);
+        pixmap.load(levelPath);
+    }
+
+    if (pixmap.isNull())
+    {
+        QString basePath = QString(":/image/tower/%1.png").arg(baseName);
+        pixmap.load(basePath);
+    }
+
+    if (pixmap.isNull())
+    {
+        pixmap = getDefaultTowerPixmap();
+    }
+    else
+    {
+        pixmap = pixmap.scaled(GameConfig::GRID_SIZE,
+                               GameConfig::GRID_SIZE,
+                               Qt::KeepAspectRatio,
+                               Qt::SmoothTransformation);
+    }
+
+    pixmapCache.insert(cacheKey, pixmap);
+    return pixmap;
+}
+
+QPixmap ResourceManager::getTowerBasePixmapForType(int towerType, int level)
+{
+    QString cacheKey = QString("tower_base_%1_lvl%2").arg(towerType).arg(level);
+    if (pixmapCache.contains(cacheKey))
+    {
+        return pixmapCache.value(cacheKey);
+    }
+
+    QString baseName;
+    switch (towerType)
+    {
+    case TOWER_ARROW:
+        baseName = "arrow_tower_base";
+        break;
+    case TOWER_CANNON:
+        baseName = "cannon_tower_base";
+        break;
+    case TOWER_MAGIC:
+        baseName = "magic_tower_base";
+        break;
+    default:
+        return getDefaultTowerBasePixmap();
+    }
+
+    QPixmap pixmap;
+
+    QString basePath = QString(":/image/tower/%1.png").arg(baseName);
+    pixmap.load(basePath);
+
+    if (pixmap.isNull())
+    {
+        pixmap = getDefaultTowerBasePixmap();
+    }
+    else
+    {
+        pixmap = pixmap.scaled(GameConfig::GRID_SIZE,
+                               GameConfig::GRID_SIZE,
+                               Qt::KeepAspectRatio,
+                               Qt::SmoothTransformation);
+    }
+
+    pixmapCache.insert(cacheKey, pixmap);
+    return pixmap;
+}
+
+QPixmap ResourceManager::getBulletPixmapForType(int bulletType, int level)
+{
+    QString cacheKey = QString("bullet_%1_lvl%2").arg(bulletType).arg(level);
+    if (pixmapCache.contains(cacheKey))
+    {
+        return pixmapCache.value(cacheKey);
+    }
+
+    QString baseName;
+    switch (bulletType)
+    {
+    case BULLET_ARROW:
+        baseName = "arrow";
+        break;
+    case BULLET_CANNON:
+        baseName = "cannon";
+        break;
+    case BULLET_MAGIC:
+        baseName = "magic";
+        break;
+    default:
+        return getDefaultBulletPixmap();
+    }
+
+    QPixmap pixmap;
+
+    if (level > 1)
+    {
+        QString levelPath = QString(":/image/bullet/%1_lvl%2.png").arg(baseName).arg(level);
+        pixmap.load(levelPath);
+    }
+
+    if (pixmap.isNull())
+    {
+        QString basePath = QString(":/image/bullet/%1.png").arg(baseName);
+        pixmap.load(basePath);
+    }
+
+    if (pixmap.isNull())
+    {
+        pixmap = getDefaultBulletPixmap();
+    }
+    else
+    {
+        pixmap = pixmap.scaled(GameConfig::GRID_SIZE,
+                               GameConfig::GRID_SIZE,
+                               Qt::KeepAspectRatio,
+                               Qt::SmoothTransformation);
+    }
+
+    pixmapCache.insert(cacheKey, pixmap);
     return pixmap;
 }
 

@@ -11,7 +11,14 @@ class Bullet : public GameEntity
 {
     Q_OBJECT
 public:
-    explicit Bullet(QPointF startPos, QPointer<Enemy> target, int damage, QObject *parent = nullptr);
+    enum BulletType
+    {
+        BULLET_ARROW = 0,
+        BULLET_CANNON = 1,
+        BULLET_MAGIC = 2
+    };
+
+    explicit Bullet(BulletType type, QPointF startPos, QPointer<Enemy> target, int damage, QObject *parent = nullptr);
     ~Bullet();
 
     void update() override;
@@ -31,6 +38,7 @@ private slots:
     void onMoveTimer();
 
 private:
+    BulletType bulletType;
     QPointer<Enemy> target;  // 使用QPointer自动跟踪target的生命周期
     int damage;
     float speed;

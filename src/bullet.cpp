@@ -14,8 +14,9 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-Bullet::Bullet(QPointF startPos, QPointer<Enemy> target, int damage, QObject *parent)
+Bullet::Bullet(BulletType type, QPointF startPos, QPointer<Enemy> target, int damage, QObject *parent)
     : GameEntity(BULLET, parent)
+    , bulletType(type)
     , target(target)
     , damage(damage)
     , speed(GameConfig::BULLET_SPEED)
@@ -29,8 +30,23 @@ Bullet::Bullet(QPointF startPos, QPointer<Enemy> target, int damage, QObject *pa
 
     // 从资源文件加载子弹图片
     ResourceManager& rm = ResourceManager::instance();
-    QPixmap bulletPixmap = rm.getBulletPixmap();
-    
+
+    int level = 1;
+    switch (bulletType)
+    {
+    case BULLET_ARROW:
+        level = 1;
+        break;
+    case BULLET_CANNON:
+        level = 2;
+        break;
+    case BULLET_MAGIC:
+        level = 3;
+        break;
+    }
+
+    QPixmap bulletPixmap = rm.getBulletPixmapForType(static_cast<int>(bulletType), level);
+
     setPixmap(bulletPixmap);
     
     // 设置图片的中心为旋转中心，并通过偏移让pos表示子弹中心（锚点为0.5,0.5）

@@ -1,4 +1,4 @@
-﻿#include "include/gamemanager.h"
+#include "include/gamemanager.h"
 #include "include/resourcemanager.h"
 
 #include <cmath>
@@ -298,3 +298,75 @@ QPointer<Tower> GameManager::buildTower(Tower::TowerType type, const QPointF &po
     return tower;
 }
 
+QPointer<Tower> GameManager::upgradeTower(QPointer<Tower> tower)
+{
+    if (!tower)
+        return QPointer<Tower>();
+
+    int index = towers.indexOf(tower);
+    if (index < 0)
+        return QPointer<Tower>();
+
+    Tower::TowerType currentType = tower->getTowerType();
+    Tower::TowerType nextType;
+    switch (currentType)
+    {
+    case Tower::ARROW_TOWER:
+        nextType = Tower::CANNON_TOWER;
+        break;
+    case Tower::CANNON_TOWER:
+        nextType = Tower::MAGIC_TOWER;
+        break;
+    case Tower::MAGIC_TOWER:
+        return QPointer<Tower>();
+    }
+
+    int currentCost = getTowerCost(currentType);
+    int nextCost = getTowerCost(nextType);
+    int extraCost = nextCost - currentCost;
+    if (extraCost < 0)
+        extraCost = 0;
+
+    if (gold < extraCost)
+        return QPointer<Tower>();
+
+    gold -= extraCost;
+    emit goldChanged(gold);
+
+    QPointF position = tower->pos();
+    QObject *parentForTower = tower->parent();
+
+    QPointer<Tower> newTower = new Tower(nextType, position, parentForTower);
+    towers[index] = newTower;
+
+    emit towerUpgraded(tower, newTower);
+
+    return newTower;
+}
+
+bool GameManager::demolishTower(QPointer<Tower> tower)
+{
+    if (!tower)
+        return false;
+
+    int index = towers.indexOf(tower);
+    if (index < 0)
+        return false;
+
+    int cost = tower->getCost();
+    int refund = cost * 70 / 100;
+    if (refund < 0)
+        refund = 0;
+
+    if (refund > 0)
+    {
+        gold += refund;
+        emit goldChanged(gold);
+    }
+
+    towers.removeAt(index);
+
+    emit towerDemolished(tower);
+
+    return true;
+}

@@ -20,7 +20,12 @@
 #include <QEasingCurve>
 #include <QGraphicsRectItem>
 #include <QGraphicsTextItem>
+#include <QGraphicsEllipseItem>
 #include <QColor>
+#include <QMenu>
+#include <QAction>
+#include <QMessageBox>
+#include <QApplication>
 #include <cmath>
 #include "include/placementvalidator.h"
 
@@ -94,6 +99,49 @@ GamePage::GamePage(QWidget *parent)
         }
 
         gameScene->addItem(tower);
+    });
+    connect(gameManager, &GameManager::towerUpgraded, this, [this](QPointer<Tower> oldTower, QPointer<Tower> newTower) {
+        if (!gameScene)
+            return;
+
+        if (oldTower)
+        {
+            QGraphicsPixmapItem *oldBase = oldTower->getBaseItem();
+            if (oldBase && oldBase->scene())
+            {
+                gameScene->removeItem(oldBase);
+            }
+            if (oldTower->scene())
+            {
+                gameScene->removeItem(oldTower);
+            }
+            oldTower->deleteLater();
+        }
+
+        if (newTower)
+        {
+            QGraphicsPixmapItem *newBase = newTower->getBaseItem();
+            if (newBase)
+            {
+                gameScene->addItem(newBase);
+            }
+            gameScene->addItem(newTower);
+        }
+    });
+    connect(gameManager, &GameManager::towerDemolished, this, [this](QPointer<Tower> tower) {
+        if (!tower || !gameScene)
+            return;
+
+        QGraphicsPixmapItem *baseItem = tower->getBaseItem();
+        if (baseItem && baseItem->scene())
+        {
+            gameScene->removeItem(baseItem);
+        }
+        if (tower->scene())
+        {
+            gameScene->removeItem(tower);
+        }
+        tower->deleteLater();
     });
     connect(gameManager, &GameManager::gameOver, this, [this]() {
         showGameOverDialog();
@@ -380,6 +428,31 @@ void GamePage::showFloatingTip(const QString &text, const QPointF &scenePos, con
     });
     
     anim->start(QAbstractAnimation::DeleteWhenStopped);
+}
+
+void GamePage::showUpgradeEffect(const QPointF &scenePos)
+{
+    if (!gameScene)
+        return;
+
+    int gridSize = GameConfig::GRID_SIZE;
+    int gridX = int(scenePos.x() / gridSize) * gridSize;
+    int gridY = int(scenePos.y() / gridSize) * gridSize;
+
+    QGraphicsEllipseItem *effectItem = new QGraphicsEllipseItem(gridX, gridY, gridSize, gridSize);
+    effectItem->setBrush(QBrush(QColor(255, 215, 0, 120)));
+    effectItem->setPen(QPen(Qt::NoPen));
+    effectItem->setZValue(1500);
+    gameScene->addItem(effectItem);
+
+    QTimer::singleShot(300, [effectItem]()
+                       {
+        if (effectItem->scene())
+        {
+            effectItem->scene()->removeItem(effectItem);
+        }
+        delete effectItem;
+    });
 }
 
 void GamePage::createPath()
@@ -783,8 +856,146 @@ void GamePage::mousePressEvent(QMouseEvent *event)
     }
     else if (event->button() == Qt::RightButton)
     {
-        // 右键可以显示信息或取消选择
-        qDebug() << "Right click at grid (" << gridX << "," << gridY << ")";
+        QList<QGraphicsItem *> itemsAtPos = gameScene->items(scenePos);
+        Tower *clickedTower = nullptr;
+        for (QGraphicsItem *item : itemsAtPos)
+        {
+            Tower *tower = dynamic_cast<Tower *>(item);
+            if (tower)
+            {
+                clickedTower = tower;
+                break;
+            }
+        }
+
+        if (!clickedTower)
+        {
+            qDebug() << "Right click at empty grid (" << gridX << "," << gridY << ")";
+            QWidget::mousePressEvent(event);
+            return;
+        }
+
+        Tower::TowerType type = clickedTower->getTowerType();
+        int currentCost = clickedTower->getCost();
+        Tower::TowerType nextType = type;
+        bool hasNext = false;
+        switch (type)
+        {
+        case Tower::ARROW_TOWER:
+            nextType = Tower::CANNON_TOWER;
+            hasNext = true;
+            break;
+        case Tower::CANNON_TOWER:
+            nextType = Tower::MAGIC_TOWER;
+            hasNext = true;
+            break;
+        case Tower::MAGIC_TOWER:
+            hasNext = false;
+            break;
+        }
+
+        int extraCost = 0;
+        QString upgradeText;
+        if (hasNext)
+        {
+            int nextCost = 0;
+            switch (nextType)
+            {
+            case Tower::ARROW_TOWER:
+                nextCost = GameConfig::TowerStats::ARROW_COST;
+                break;
+            case Tower::CANNON_TOWER:
+                nextCost = GameConfig::TowerStats::CANNON_COST;
+                break;
+            case Tower::MAGIC_TOWER:
+                nextCost = GameConfig::TowerStats::MAGIC_COST;
+                break;
+            }
+            extraCost = nextCost - currentCost;
+            if (extraCost < 0)
+                extraCost = 0;
+
+            QString nextName;
+            if (nextType == Tower::CANNON_TOWER)
+                nextName = "炮塔";
+            else if (nextType == Tower::MAGIC_TOWER)
+                nextName = "魔法塔";
+            else
+                nextName = "防御塔";
+
+            upgradeText = QString("升级为%1 (-%2 金币)").arg(nextName).arg(extraCost);
+        }
+
+        int refund = currentCost * 70 / 100;
+
+        QMenu menu(this);
+        menu.setWindowOpacity(0.9);
+
+        QAction *upgradeAction = nullptr;
+        if (hasNext)
+        {
+            upgradeAction = menu.addAction(upgradeText);
+        }
+        QAction *sellAction = menu.addAction(QString("拆除 (返还 %1 金币)").arg(refund));
+        QAction *cancelAction = menu.addAction("取消");
+
+        QAction *selected = menu.exec(mapToGlobal(event->pos()));
+        if (!selected || selected == cancelAction)
+        {
+            QWidget::mousePressEvent(event);
+            return;
+        }
+
+        if (selected == upgradeAction && hasNext)
+        {
+            if (extraCost > 0 && gameManager->getGold() < extraCost)
+            {
+                showFloatingTip("金币不足!", scenePos, Qt::red);
+                QApplication::beep();
+                QWidget::mousePressEvent(event);
+                return;
+            }
+
+            QPointer<Tower> newTower = gameManager->upgradeTower(clickedTower);
+            if (!newTower)
+            {
+                if (!hasNext)
+                {
+                    showFloatingTip("已是最高级塔", scenePos, Qt::yellow);
+                }
+                else
+                {
+                    showFloatingTip("升级失败", scenePos, Qt::red);
+                }
+                QWidget::mousePressEvent(event);
+                return;
+            }
+
+            newTower->setGameScene(gameScene);
+            showUpgradeEffect(newTower->pos());
+            QApplication::beep();
+        }
+        else if (selected == sellAction)
+        {
+            QMessageBox::StandardButton reply = QMessageBox::question(
+                this,
+                "确认拆除",
+                QString("确定要拆除该防御塔吗？\n将返还 %1 金币。").arg(refund),
+                QMessageBox::Yes | QMessageBox::No,
+                QMessageBox::No);
+            if (reply == QMessageBox::Yes)
+            {
+                bool ok = gameManager->demolishTower(clickedTower);
+                if (ok)
+                {
+                    showFloatingTip(QString("已返还 %1 金币").arg(refund), scenePos, Qt::green);
+                    QApplication::beep();
+                }
+            }
+        }
+
+        QWidget::mousePressEvent(event);
+        return;
     }
 
     QWidget::mousePressEvent(event);

@@ -10,10 +10,16 @@
     <file>enemy_walk.png</file>
   </qresource>
   <qresource prefix="/image/bullet">
-    <file>bullet.png</file>
+    <file>cannon.png</file>
+    <file>magic.png</file>
+    <file>arrow.png</file>
   </qresource>
   <qresource prefix="/image/tower">
-    <file>tower.png</file>
-    <file>towerbase.png</file>
+    <file>arrow_tower.png</file>
+    <file>arrow_tower_base.png</file>
+    <file>cannon_tower.png</file>
+    <file>magic_tower.png</file>
+    <file>magic_tower_base.png</file>
+    <file>cannon_tower_base.png</file>
   </qresource>
 </RCC>

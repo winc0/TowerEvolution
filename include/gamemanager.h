@@ -1,4 +1,4 @@
-﻿#ifndef GAMEMANAGER_H
+#ifndef GAMEMANAGER_H
 #define GAMEMANAGER_H
 
 #include <QObject>
@@ -40,6 +40,8 @@ public:
     const QList<QPointer<Bullet>> &getBullets() const { return bullets; }
 
     QPointer<Tower> buildTower(Tower::TowerType type, const QPointF &position, QObject *parentForTower);
+    QPointer<Tower> upgradeTower(QPointer<Tower> tower);
+    bool demolishTower(QPointer<Tower> tower);
 
 signals:
     void goldChanged(int gold);
@@ -53,6 +55,8 @@ signals:
     void enemyReachedEnd(QPointer<Enemy> enemy);
     void enemyDied(QPointer<Enemy> enemy);
     void towerBuilt(QPointer<Tower> tower);
+    void towerUpgraded(QPointer<Tower> oldTower, QPointer<Tower> newTower);
+    void towerDemolished(QPointer<Tower> tower);
 
 public slots:
     void spawnEnemy();

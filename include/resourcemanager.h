@@ -11,6 +11,18 @@ class ResourceManager : public QObject
     Q_OBJECT
 
 public:
+    enum TowerVisualType {
+        TOWER_ARROW = 0,
+        TOWER_CANNON = 1,
+        TOWER_MAGIC = 2
+    };
+
+    enum BulletVisualType {
+        BULLET_ARROW = 0,
+        BULLET_CANNON = 1,
+        BULLET_MAGIC = 2
+    };
+
     static ResourceManager& instance();
 
     bool loadResources();
@@ -31,6 +43,10 @@ public:
     QPixmap getBulletPixmap() const;
     QPixmap getTowerPixmap() const;
     QPixmap getTowerBasePixmap() const;
+
+    QPixmap getTowerPixmapForType(int towerType, int level);
+    QPixmap getTowerBasePixmapForType(int towerType, int level);
+    QPixmap getBulletPixmapForType(int bulletType, int level);
     // 默认图片
     QPixmap getDefaultEnemyPixmap() const;
     QPixmap getDefaultTowerPixmap() const;
