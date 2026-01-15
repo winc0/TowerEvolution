@@ -3,7 +3,7 @@
 #include "include/gamepage.h"
 #include "include/mainmenupage.h"
 
-#include <ui_mainwindow.h>
+#include <QStackedWidget>
 #include <QVBoxLayout>
 #include <QGraphicsOpacityEffect>
 #include <QPropertyAnimation>
@@ -12,31 +12,29 @@
 #include <QApplication>
 
 MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent), ui(new Ui::MainWindow), gamePage(nullptr), mainMenuPage(nullptr)
+    : QMainWindow(parent), stackedWidget(nullptr), gamePage(nullptr), mainMenuPage(nullptr)
 {
     // 设置全局的 QSettings 组织名和应用名
     QApplication::setApplicationName("TowerDefenseGame");
     QApplication::setApplicationVersion("1.0.0");
     QApplication::setOrganizationName("TowerDefenseStudio");
 
-    ui->setupUi(this);
+    QWidget *central = new QWidget(this);
+    QVBoxLayout *layout = new QVBoxLayout(central);
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(0);
 
-    // 移除UI中stackedWidget的默认页面（如果有）
-    while (ui->stackedWidget->count() > 0)
-    {
-        QWidget *widget = ui->stackedWidget->widget(0);
-        ui->stackedWidget->removeWidget(widget);
-        widget->deleteLater();
-    }
+    stackedWidget = new QStackedWidget(central);
+    layout->addWidget(stackedWidget);
 
-    // 创建页面
+    setCentralWidget(central);
+
     mainMenuPage = new MainMenuPage(this);
     gamePage = new GamePage(this);
 
-    // 添加到 stackedWidget
-    ui->stackedWidget->addWidget(mainMenuPage);
-    ui->stackedWidget->addWidget(gamePage);
-    ui->stackedWidget->setCurrentWidget(mainMenuPage);
+    stackedWidget->addWidget(mainMenuPage);
+    stackedWidget->addWidget(gamePage);
+    stackedWidget->setCurrentWidget(mainMenuPage);
 
     // 连接信号
     connect(mainMenuPage, &MainMenuPage::startGameRequested,
@@ -54,12 +52,12 @@ MainWindow::MainWindow(QWidget *parent)
 
 MainWindow::~MainWindow()
 {
-    delete ui;
 }
 
 void MainWindow::switchToGamePage(GameConfig::MapId mapId)
 {
-    ui->stackedWidget->setCurrentIndex(1);
+    if (stackedWidget)
+        stackedWidget->setCurrentIndex(1);
     if (gamePage)
     {
         gamePage->setMap(mapId);
@@ -75,7 +73,8 @@ void MainWindow::switchToMainMenu()
         gamePage->setGraphicsEffect(nullptr);
         gamePage->resetGame();
     }
-    ui->stackedWidget->setCurrentIndex(0);
+    if (stackedWidget)
+        stackedWidget->setCurrentIndex(0);
 }
 
 void MainWindow::onGameOver()

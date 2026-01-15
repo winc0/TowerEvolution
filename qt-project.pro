@@ -38,9 +38,6 @@ HEADERS += \
     include/quadtree.h \
     include/levelselectpage.h
 
-FORMS += \
-    ui/mainwindow.ui
-
 RESOURCES += \
     res/res.qrc
 

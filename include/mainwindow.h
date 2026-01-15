@@ -7,10 +7,7 @@
 // 前向声明
 class GamePage;
 class MainMenuPage;
-
-QT_BEGIN_NAMESPACE
-namespace Ui { class MainWindow; }
-QT_END_NAMESPACE
+class QStackedWidget;
 
 class MainWindow : public QMainWindow
 {
@@ -27,7 +24,7 @@ private slots:
     void onGameOver();
 
 private:
-    Ui::MainWindow *ui;
+    QStackedWidget *stackedWidget;
     GamePage *gamePage;
     MainMenuPage *mainMenuPage;
 };
