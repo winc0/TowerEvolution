@@ -4,9 +4,8 @@
 #include <QPainter>
 #include <QPen>
 #include <QBrush>
-#include <QCoreApplication>
-#include <QDir>
 #include <QDebug>
+#include <QRandomGenerator>
 
 ResourceManager::ResourceManager(QObject *parent)
     : QObject(parent)
@@ -33,6 +32,12 @@ QPixmap ResourceManager::getPixmap(const QString& name) const
 QPixmap ResourceManager::getEnemyPixmap(int enemyType, EnemyState state) const
 {
     // 根据敌人类型和状态构造资源路径
+    int type = enemyType;
+    if (type < 0 || type > GameConfig::ENEMY_TYPE_NUMBER - 1)
+    {
+        return getDefaultEnemyPixmap();
+    }
+
     QString stateName;
     switch (state) {
         case ENEMY_IDLE:
@@ -50,16 +55,16 @@ QPixmap ResourceManager::getEnemyPixmap(int enemyType, EnemyState state) const
         default:
             stateName = "idle";
     }
-    
+
     // 路径格式: :/image/enemy/enemy_{type}_{state}.png
     // 如果不存在则尝试通用路径: :/image/enemy/enemy_{state}.png
-    QString resourcePath = QString(":/image/enemy/enemy_%1_%2.png").arg(enemyType).arg(stateName);
+    QString resourcePath = QString(":/image/enemy/enemy_%1_%2.png").arg(type).arg(stateName);
     QPixmap pixmap(resourcePath);
     
     // 如果特定类型的图片不存在，尝试加载通用版本
     if (pixmap.isNull()) {
-        resourcePath = QString(":/image/enemy/enemy_%1.png").arg(stateName);
-        pixmap.load(resourcePath);
+        QString fallbackPath = QString(":/image/enemy/enemy_%1.png").arg(stateName);
+        pixmap.load(fallbackPath);
     }
     
     // 如果仍然不存在，返回默认图片
@@ -68,12 +73,6 @@ QPixmap ResourceManager::getEnemyPixmap(int enemyType, EnemyState state) const
     }
 
     return pixmap.scaled(GameConfig::ENEMY_SIZE, GameConfig::ENEMY_SIZE, Qt::KeepAspectRatio, Qt::SmoothTransformation);
-}
-
-QPixmap ResourceManager::getEnemyPixmapByState(EnemyState state) const
-{
-    // 简化版本，仅按状态获取（不区分敌人类型）
-    return getEnemyPixmap(0, state);
 }
 
 QPixmap ResourceManager::getDefaultEnemyPixmap() const

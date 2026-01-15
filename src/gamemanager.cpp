@@ -2,6 +2,7 @@
 #include "include/resourcemanager.h"
 
 #include <cmath>
+#include <QRandomGenerator>
 
 GameManager::GameManager(QObject *parent)
     : QObject(parent),
@@ -107,7 +108,20 @@ void GameManager::spawnEnemy()
         return;
     }
 
-    QPointer<Enemy> enemy = new Enemy(0, this);
+    int enemyType = 0;
+    // 前面几波敌人固定
+    if (currentWave >= 1 && currentWave <= GameConfig::ENEMY_TYPE_NUMBER)
+    {
+        enemyType = currentWave - 1;
+    }
+    // 后面几波敌人随机
+    else
+    {
+        int index = QRandomGenerator::global()->bounded(GameConfig::ENEMY_TYPE_NUMBER);
+        enemyType = index;
+    }
+
+    QPointer<Enemy> enemy = new Enemy(enemyType, this);
     enemy->setPath(pathPoints);
 
     enemies.append(enemy);

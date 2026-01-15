@@ -18,6 +18,7 @@ namespace GameConfig
     const int ENEMY_REWARD = 15;
 
     // 敌人设置
+    const int ENEMY_TYPE_NUMBER = 4; // 敌人类型数量
     const int ENEMY_HEALTH = 100;
     const int ENEMY_SIZE = 30;
     const int ENEMY_MOVE_INTERVAL = 50; // ms

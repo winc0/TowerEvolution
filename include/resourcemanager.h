@@ -38,7 +38,6 @@ public:
 
     // 敌人图片加载
     QPixmap getEnemyPixmap(int enemyType, EnemyState state) const;
-    QPixmap getEnemyPixmapByState(EnemyState state) const; // 简化版，仅按状态获取
 
     QPixmap getBulletPixmap() const;
     QPixmap getTowerPixmap() const;
