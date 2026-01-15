@@ -37,7 +37,9 @@ GamePage::GamePage(QWidget *parent)
       gameManager(new GameManager(this)),
       currentMapId(GameConfig::MAP_DEFAULT),
       resultOverlay(nullptr),
-      resultPanel(nullptr)
+      resultPanel(nullptr),
+      pauseOverlay(nullptr),
+      pausePanel(nullptr)
 {
     qDebug() << "GamePage constructor called";
 
@@ -500,10 +502,12 @@ void GamePage::pauseGame()
     {
         pauseAllEnemies();
         pauseAllTowersAndBullets();
+        showPauseMenu(); // 显示暂停菜单
         pauseButton->setText("继续");
     }
     else
     {
+        hidePauseMenu(); // 隐藏暂停菜单
         resumeAllEnemies();
         resumeAllTowersAndBullets();
         pauseButton->setText("暂停");
@@ -745,8 +749,8 @@ void GamePage::showGameOverDialog()
 
 void GamePage::mousePressEvent(QMouseEvent *event)
 {
-    if (!gameManager || !gameManager->isGameRunning())
-        return;
+    if (!gameManager || !gameManager->isGameRunning() || gameManager->isPaused())
+        return; // 暂停时直接返回，不处理鼠标点击
 
     // 将鼠标点击位置从视图坐标转换到场景坐标
     QPoint viewPos = event->pos();
@@ -1003,7 +1007,7 @@ void GamePage::mousePressEvent(QMouseEvent *event)
 
 void GamePage::mouseMoveEvent(QMouseEvent *event)
 {
-    if (!gameManager || !gameManager->isGameRunning())
+    if (!gameManager || !gameManager->isGameRunning() || gameManager->isPaused())
         return;
 
     QPoint viewPos = event->pos();
@@ -1024,6 +1028,10 @@ void GamePage::mouseMoveEvent(QMouseEvent *event)
 
 bool GamePage::eventFilter(QObject *obj, QEvent *event)
 {
+    // 暂停时不处理鼠标移动
+    if (gameManager && gameManager->isPaused())
+        return QObject::eventFilter(obj, event);
+
     if (obj == gameView->viewport() && event->type() == QEvent::MouseMove)
     {
         QMouseEvent *mouseEvent = static_cast<QMouseEvent *>(event);
@@ -1170,5 +1178,118 @@ void GamePage::resumeAllTowersAndBullets()
         {
             bullet->resumeMovement();
         }
+    }
+}
+
+void GamePage::showPauseMenu()
+{
+    if (pauseOverlay) return;
+
+    // ===== 创建灰色半透明遮罩 =====
+    pauseOverlay = new QWidget(this);
+    pauseOverlay->setGeometry(0, 0, width(), height());
+    pauseOverlay->setStyleSheet("background-color: rgba(0, 0, 0, 180);");
+    pauseOverlay->setAttribute(Qt::WA_TransparentForMouseEvents, false); // 阻止游戏场景操作
+
+    // ===== 创建面板 =====
+    pausePanel = new QWidget(pauseOverlay);
+    pausePanel->setFixedSize(400, 300);
+    pausePanel->move((width() - pausePanel->width()) / 2, (height() - pausePanel->height()) / 2);
+    pausePanel->setStyleSheet(
+        "QWidget {"
+        "  background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #ecf0f1, stop:1 #bdc3c7);"
+        "  border-radius: 20px;"
+        "  border: 2px solid #7f8c8d;"
+        "}"
+    );
+
+    QVBoxLayout *layout = new QVBoxLayout(pausePanel);
+    layout->setContentsMargins(36, 48, 36, 48);
+    layout->setSpacing(20);
+
+    // ===== 标题 =====
+    QLabel *title = new QLabel("游戏已暂停", pausePanel);
+    title->setFont(QFont("Microsoft YaHei", 24, QFont::Bold));
+    title->setAlignment(Qt::AlignCenter);
+    title->setStyleSheet("color: #2c3e50;");
+    layout->addWidget(title);
+
+    layout->addSpacing(20);
+
+    // ===== 创建按钮 =====
+    QPushButton *resumeButton = new QPushButton("继续游戏", pausePanel);
+    QPushButton *restartButton = new QPushButton("重新开始", pausePanel);
+    QPushButton *exitButton = new QPushButton("退出游戏", pausePanel);
+
+    for (QPushButton *btn : {resumeButton, restartButton, exitButton})
+    {
+        btn->setMinimumHeight(48);
+        btn->setFont(QFont("Microsoft YaHei", 14, QFont::Bold));
+        btn->setStyleSheet(
+            "QPushButton {"
+            "  color: white;"
+            "  background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #3498db, stop:1 #2980b9);"
+            "  border-radius: 10px;"
+            "  padding: 8px;"
+            "  border: 2px solid #1f618d;"
+            "}"
+            "QPushButton:hover {"
+            "  background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #2980b9, stop:1 #3498db);"
+            "  border: 2px solid #154360;"
+            "}"
+            "QPushButton:pressed {"
+            "  background-color: #21618c;"
+            "  border: 2px solid #0e3a5e;"
+            "}"
+        );
+        layout->addWidget(btn);
+    }
+
+    // ===== 按钮事件 =====
+    connect(resumeButton, &QPushButton::clicked, this, [this]()
+            {
+                if (pauseOverlay)
+                {
+                    pauseOverlay->deleteLater();
+                    pauseOverlay = nullptr;
+                    pausePanel = nullptr;
+                }
+                if (gameManager)
+                {
+                    gameManager->pauseGame(); // 再次调用以恢复
+                    resumeAllEnemies();
+                    resumeAllTowersAndBullets();
+                    pauseButton->setText("暂停");
+                }
+            });
+
+    connect(restartButton, &QPushButton::clicked, this, [this]()
+            {
+                if (pauseOverlay)
+                {
+                    pauseOverlay->deleteLater();
+                    pauseOverlay = nullptr;
+                    pausePanel = nullptr;
+                }
+                resetGame();
+                startGame();
+            });
+
+    connect(exitButton, &QPushButton::clicked, this, [this]()
+            {
+                qApp->quit();
+            });
+
+    pauseOverlay->show();
+    pausePanel->show();
+}
+
+void GamePage::hidePauseMenu()
+{
+    if (pauseOverlay)
+    {
+        pauseOverlay->deleteLater();
+        pauseOverlay = nullptr;
+        pausePanel = nullptr;
     }
 }

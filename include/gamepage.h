@@ -46,6 +46,8 @@ private:
     void initUI();
     void createPath();
     void showGameOverDialog();
+    void showPauseMenu();
+    void hidePauseMenu();
 
     // 绘制游戏元素
     void drawBackground();
@@ -84,6 +86,8 @@ private:
     QPushButton *returnButton;
     QWidget *resultOverlay;
     QWidget *resultPanel;
+    QWidget *pauseOverlay;
+    QWidget *pausePanel;
 
     // 布局
     QVBoxLayout *mainLayout;
