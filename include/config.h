@@ -53,9 +53,10 @@ namespace GameConfig
     }
 
     // 波次设置
-    const int WAVE_ENEMY_COUNT = 10;
+    const int WAVE_ENEMY_COUNT = 10; // 每波敌人数量
+    const int WAVE_COUNT_MAX = 5;
     const int WAVE_SPAWN_INTERVAL_MAX = 2000; // ms
-    const int WAVE_SPAWN_INTERVAL_MIN = 500; // ms
+    const int WAVE_SPAWN_INTERVAL_MIN = 500;  // ms
     const int WAVE_SPAWN_INTERVAL_EACH = 200; // ms
 
     // 碰撞检测
@@ -77,7 +78,8 @@ namespace GameConfig
 
     enum MapId
     {
-        MAP_DEFAULT = 0
+        MAP1 = 0,
+        MAP2 = 1
     };
 
     // 定义路径点数据结构，使用网格坐标
@@ -90,7 +92,7 @@ namespace GameConfig
     namespace MapPaths
     {
         // 使用网格坐标定义路径，更清晰易维护
-        const QVector<GridPoint> DEFAULT_PATH = {
+        const QVector<GridPoint> MAP1_PATH = {
             {16, 6},
             {16, 7},
             {11, 7},
@@ -104,15 +106,32 @@ namespace GameConfig
             {16, 9},
         };
 
+        const QVector<GridPoint> MAP2_PATH = {
+            {2, 12},
+            {5, 12},
+            {5, 8},
+            {6, 8},
+            {6, 7},
+            {10, 7},
+            {10, 10},
+            {9, 10},
+            {9, 13},
+            {15, 13},
+            {15, 10},
+            {18, 10},
+            {18, 8},
+        };
+
         // 地图ID到路径的映射
         const QHash<MapId, QVector<GridPoint>> PATH_MAP = {
-            {MAP_DEFAULT, DEFAULT_PATH},
+            {MAP1, MAP1_PATH},
+            {MAP2, MAP2_PATH},
         };
     }
 
     namespace Placement
     {
-        const QVector<GridPoint> DEFAULT_BUILDABLE_GRIDS = {
+        const QVector<GridPoint> MAP1_BUILDABLE_GRIDS = {
             {13, 6},
             {14, 6},
             {15, 6},
@@ -139,14 +158,38 @@ namespace GameConfig
             {10, 10},
             {11, 10},
             {12, 10},
-            {13, 10},
+
             {14, 10},
             {15, 10},
             {16, 10},
         };
 
+        const QVector<GridPoint> MAP2_BUILDABLE_GRIDS = {
+            {2, 10},
+            {3, 10},
+            {3, 8},
+            {3, 7},
+            {4, 6},
+            {12, 7},
+            {12, 8},
+            {12, 9},
+            {12, 11},
+            {13, 11},
+            {13, 10},
+            {13, 9},
+            {13, 7},
+            {14, 7},
+            {14, 8},
+            {15, 8},
+            {16, 8},
+            {16, 7},
+            {7, 11},
+            {7, 13},
+        };
+
         const QHash<MapId, QVector<GridPoint>> BUILDABLE_MAP = {
-            {MAP_DEFAULT, DEFAULT_BUILDABLE_GRIDS},
+            {MAP1, MAP1_BUILDABLE_GRIDS},
+            {MAP2, MAP2_BUILDABLE_GRIDS},
         };
     }
 

@@ -1,7 +1,8 @@
 <!DOCTYPE RCC>
 <RCC version="1.0">
-  <qresource prefix="/image/">
-    <file>map.png</file>
+  <qresource prefix="/image/map">
+    <file>map1.png</file>
+    <file>map2.png</file>
   </qresource>
   <qresource prefix="/image/enemy">
     <file>enemy_0_dead.png</file>

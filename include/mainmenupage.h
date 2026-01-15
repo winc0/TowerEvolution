@@ -1,6 +1,7 @@
 #ifndef MAINMENUPAGE_H
 #define MAINMENUPAGE_H
 
+#include "config.h"
 #include <QWidget>
 #include <QPixmap>
 
@@ -16,7 +17,7 @@ public:
     explicit MainMenuPage(QWidget *parent = nullptr);
 
 signals:
-    void startGameRequested();
+    void startGameRequested(GameConfig::MapId mapId);
     void exitGameRequested();
 
 private slots:

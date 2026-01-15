@@ -175,15 +175,37 @@ QPixmap ResourceManager::getDefaultBackground() const
 
 QPixmap ResourceManager::getGameMap() const
 {
-    QPixmap mapPixmap(":/image/map.png");
+    return getGameMap(GameConfig::MAP1);
+}
 
-    if (mapPixmap.isNull()) {
-        // 如果找不到map.png，返回默认背景
+QPixmap ResourceManager::getGameMap(GameConfig::MapId mapId) const
+{
+    QString resourcePath;
+
+    switch (mapId)
+    {
+    case GameConfig::MAP1:
+        resourcePath = ":/image/map/map1.png";
+        break;
+    case GameConfig::MAP2:
+        resourcePath = ":/image/map/map2.png";
+        break;
+    default:
+        resourcePath = ":/image/map/map1.png";
+        break;
+    }
+
+    QPixmap mapPixmap(resourcePath);
+
+    if (mapPixmap.isNull())
+    {
         return getDefaultBackground();
     }
 
-    // 将320x240的地图放大到800x600
-    return mapPixmap.scaled(GameConfig::WINDOW_WIDTH, GameConfig::WINDOW_HEIGHT, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+    return mapPixmap.scaled(GameConfig::WINDOW_WIDTH,
+                            GameConfig::WINDOW_HEIGHT,
+                            Qt::IgnoreAspectRatio,
+                            Qt::SmoothTransformation);
 }
 
 QPixmap ResourceManager::getBulletPixmap() const

@@ -20,7 +20,8 @@ SOURCES += \
     src/tower.cpp \
     src/bullet.cpp \
     src/placementvalidator.cpp \
-    src/quadtree.cpp
+    src/quadtree.cpp \
+    src/levelselectpage.cpp
 
 HEADERS += \
     include/config.h \
@@ -34,7 +35,8 @@ HEADERS += \
     include/tower.h \
     include/bullet.h \
     include/placementvalidator.h \
-    include/quadtree.h
+    include/quadtree.h \
+    include/levelselectpage.h
 
 FORMS += \
     ui/mainwindow.ui

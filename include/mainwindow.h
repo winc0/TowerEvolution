@@ -1,6 +1,7 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
+#include "config.h"
 #include <QMainWindow>
 
 // 前向声明
@@ -19,7 +20,7 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
-    void switchToGamePage();
+    void switchToGamePage(GameConfig::MapId mapId);
     void switchToMainMenu();
 
 private slots:

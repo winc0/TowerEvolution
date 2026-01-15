@@ -4,6 +4,7 @@
 
 #include <cmath>
 #include <QRandomGenerator>
+#include <QDebug>
 
 GameManager::GameManager(QObject *parent)
     : QObject(parent),
@@ -15,7 +16,7 @@ GameManager::GameManager(QObject *parent)
       gameRunning(false),
       paused(false),
       killCount(0),
-      currentMapId(GameConfig::MAP_DEFAULT),
+      currentMapId(GameConfig::MAP1),
       gameTimer(new QTimer(this)),
       enemySpawnTimer(new QTimer(this))
 {
@@ -149,6 +150,7 @@ void GameManager::updateGame()
         paused = true;
         emit gameStateChanged(gameRunning, paused);
         emit gameOver();
+        qDebug() << "updateGame() found Game over";
     }
 }
 
@@ -204,12 +206,12 @@ void GameManager::updateTowers()
         QRectF queryRect(tower->x() - range, tower->y() - range, range * 2, range * 2);
 
         // 查询四叉树以查找防御塔范围内的所有敌人
-        QList<Enemy*> potentialEnemies;
+        QList<Enemy *> potentialEnemies;
         quadtree.query(queryRect, potentialEnemies);
 
         // 创建一份位于防御塔射程内的敌人列表
         QList<QPointer<Enemy>> enemiesInRange;
-        for (Enemy* rawEnemy : potentialEnemies)
+        for (Enemy *rawEnemy : potentialEnemies)
         {
             QPointer<Enemy> enemy(rawEnemy);
             if (!enemy)
@@ -264,6 +266,22 @@ void GameManager::checkNextWave()
 {
     if (waveSpawnComplete && enemies.isEmpty())
     {
+        if (currentWave >= GameConfig::WAVE_COUNT_MAX)
+        {
+            if (gameTimer->isActive())
+                gameTimer->stop();
+            if (enemySpawnTimer->isActive())
+                enemySpawnTimer->stop();
+
+            gameRunning = false;
+            paused = false;
+
+            emit gameStateChanged(gameRunning, paused);
+            emit levelCompleted(currentMapId, currentWave);
+
+            return;
+        }
+
         currentWave++;
         enemiesSpawnedThisWave = 0;
         waveSpawnComplete = false;

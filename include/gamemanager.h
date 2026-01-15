@@ -49,6 +49,7 @@ signals:
     void killCountChanged(int killCount);
     void gameStateChanged(bool running, bool paused);
     void gameOver();
+    void levelCompleted(GameConfig::MapId mapId, int wave);
 
     void enemySpawnRequested(QPointer<Enemy> enemy);
     void enemyReachedEnd(QPointer<Enemy> enemy);
@@ -94,4 +95,3 @@ private:
 };
 
 #endif // GAMEMANAGER_H
-

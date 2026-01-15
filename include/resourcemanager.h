@@ -1,6 +1,7 @@
 #ifndef RESOURCEMANAGER_H
 #define RESOURCEMANAGER_H
 
+#include "config.h"
 #include <QObject>
 #include <QPixmap>
 #include <QMap>
@@ -53,6 +54,7 @@ public:
     QPixmap getDefaultBulletPixmap() const;
     QPixmap getDefaultBackground() const;
     QPixmap getGameMap() const;
+    QPixmap getGameMap(GameConfig::MapId mapId) const;
 
 private:
     explicit ResourceManager(QObject *parent = nullptr);

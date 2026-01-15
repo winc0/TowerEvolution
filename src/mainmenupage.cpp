@@ -1,6 +1,7 @@
 #include "include/config.h"
 #include "include/mainmenupage.h"
 #include "include/resourcemanager.h"
+#include "include/levelselectpage.h"
 
 #include <QPushButton>
 #include <QLabel>
@@ -124,8 +125,10 @@ void MainMenuPage::initUI()
     // 添加底部空白
     mainLayout->addStretch(2);
 
+    // 设置主布局
     setLayout(mainLayout);
 
+    // 将背景标签放到最底层
     // 确保背景在最底层
     backgroundLabel->lower();
 }
@@ -137,7 +140,11 @@ void MainMenuPage::loadResources()
 
 void MainMenuPage::onStartButtonClicked()
 {
-    emit startGameRequested();
+    LevelSelectPage dialog(this);
+    if (dialog.exec() == QDialog::Accepted)
+    {
+        emit startGameRequested(dialog.selectedMap());
+    }
 }
 
 void MainMenuPage::onExitButtonClicked()

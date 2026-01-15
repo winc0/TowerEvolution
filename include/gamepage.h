@@ -32,6 +32,7 @@ public:
     void startGame();
     void pauseGame();
     void resetGame();
+    void setMap(GameConfig::MapId mapId);
 
 signals:
     void gameOver();
@@ -46,8 +47,10 @@ private:
     void initUI();
     void createPath();
     void showGameOverDialog();
+    void showLevelCompleteDialog();
     void showPauseMenu();
     void hidePauseMenu();
+    void saveLevelProgress(bool levelCompleted);
 
     // 绘制游戏元素
     void drawBackground();

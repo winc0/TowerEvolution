@@ -5,10 +5,20 @@
 
 #include <ui_mainwindow.h>
 #include <QVBoxLayout>
+#include <QGraphicsOpacityEffect>
+#include <QPropertyAnimation>
+#include <QEasingCurve>
+#include <QSettings>
+#include <QApplication>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), ui(new Ui::MainWindow), gamePage(nullptr), mainMenuPage(nullptr)
 {
+    // 设置全局的 QSettings 组织名和应用名
+    QApplication::setApplicationName("TowerDefenseGame");
+    QApplication::setApplicationVersion("1.0.0");
+    QApplication::setOrganizationName("TowerDefenseStudio");
+
     ui->setupUi(this);
 
     // 移除UI中stackedWidget的默认页面（如果有）
@@ -47,22 +57,25 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-void MainWindow::switchToGamePage()
+void MainWindow::switchToGamePage(GameConfig::MapId mapId)
 {
     ui->stackedWidget->setCurrentIndex(1);
     if (gamePage)
     {
+        gamePage->setMap(mapId);
         gamePage->startGame();
     }
 }
 
 void MainWindow::switchToMainMenu()
 {
-    ui->stackedWidget->setCurrentIndex(0);
     if (gamePage)
     {
+        // 移除任何图形效果以防止 painter 冲突
+        gamePage->setGraphicsEffect(nullptr);
         gamePage->resetGame();
     }
+    ui->stackedWidget->setCurrentIndex(0);
 }
 
 void MainWindow::onGameOver()

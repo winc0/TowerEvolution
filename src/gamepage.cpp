@@ -16,6 +16,7 @@
 #include <QPen>
 #include <QDebug>
 #include <QGraphicsOpacityEffect>
+#include <QGraphicsDropShadowEffect>
 #include <QPropertyAnimation>
 #include <QEasingCurve>
 #include <QGraphicsRectItem>
@@ -26,6 +27,7 @@
 #include <QAction>
 #include <QMessageBox>
 #include <QApplication>
+#include <QSettings>
 #include <cmath>
 #include "include/placementvalidator.h"
 
@@ -35,7 +37,7 @@ GamePage::GamePage(QWidget *parent)
       gameView(nullptr),
       placementValidator(nullptr),
       gameManager(new GameManager(this)),
-      currentMapId(GameConfig::MAP_DEFAULT),
+      currentMapId(GameConfig::MAP1),
       resultOverlay(nullptr),
       resultPanel(nullptr),
       pauseOverlay(nullptr),
@@ -48,10 +50,7 @@ GamePage::GamePage(QWidget *parent)
 
     initUI();
     initGameScene();
-    createPath();
-    initPlacementValidator();
-
-    gameManager->initialize(currentMapId, pathPoints, endPointAreas);
+    setMap(currentMapId);
 
     connect(gameManager, &GameManager::goldChanged, this, [this](int gold) {
         if (goldLabel)
@@ -148,6 +147,9 @@ GamePage::GamePage(QWidget *parent)
     connect(gameManager, &GameManager::gameOver, this, [this]() {
         showGameOverDialog();
     });
+    connect(gameManager, &GameManager::levelCompleted, this, [this](GameConfig::MapId, int) {
+        showLevelCompleteDialog();
+    });
 
     qDebug() << "GamePage initialized, size:" << size();
 }
@@ -158,6 +160,39 @@ GamePage::~GamePage()
     placementAreaItems.clear();
     delete placementValidator;
     resetGame();
+}
+
+void GamePage::setMap(GameConfig::MapId mapId)
+{
+    currentMapId = mapId;
+
+    if (gameScene)
+    {
+        updateHoverHighlight(QPointF(-1, -1));
+        gameScene->clear();
+    }
+
+    pathPoints.clear();
+    endPointAreas.clear();
+    placementAreaItems.clear();
+
+    createPath();
+    drawBackground();
+    drawGrid();
+    initPlacementValidator();
+
+    if (gameManager)
+    {
+        gameManager->resetGame();
+        gameManager->initialize(currentMapId, pathPoints, endPointAreas);
+
+        if (goldLabel)
+            goldLabel->setText(QString::number(gameManager->getGold()));
+        if (livesLabel)
+            livesLabel->setText(QString::number(gameManager->getLives()));
+        if (waveLabel)
+            waveLabel->setText(QString("第 %1 波").arg(gameManager->getCurrentWave()));
+    }
 }
 
 void GamePage::initUI()
@@ -317,29 +352,29 @@ void GamePage::initGameScene()
 void GamePage::drawBackground()
 {
     ResourceManager &rm = ResourceManager::instance();
-    QPixmap background = rm.getGameMap();
+    QPixmap background = rm.getGameMap(currentMapId);
 
     // 创建背景图形项 - 占据整个800x600
     QGraphicsPixmapItem *backgroundItem = new QGraphicsPixmapItem(background);
     backgroundItem->setZValue(-100); // 最底层
     gameScene->addItem(backgroundItem);
 
-    // 绘制路径
-    if (!pathPoints.isEmpty())
-    {
-        QPainterPath path;
-        path.moveTo(pathPoints.first());
+    // // 绘制路径
+    // if (!pathPoints.isEmpty())
+    // {
+    //     QPainterPath path;
+    //     path.moveTo(pathPoints.first());
 
-        for (int i = 1; i < pathPoints.size(); ++i)
-        {
-            path.lineTo(pathPoints[i]);
-        }
+    //     for (int i = 1; i < pathPoints.size(); ++i)
+    //     {
+    //         path.lineTo(pathPoints[i]);
+    //     }
 
-        QGraphicsPathItem *pathItem = new QGraphicsPathItem(path);
-        pathItem->setPen(QPen(QColor(139, 69, 19, 150), 30)); // 棕色半透明路径
-        pathItem->setZValue(-50);
-        gameScene->addItem(pathItem);
-    }
+    //     QGraphicsPathItem *pathItem = new QGraphicsPathItem(path);
+    //     pathItem->setPen(QPen(QColor(139, 69, 19, 150), 30)); // 棕色半透明路径
+    //     pathItem->setZValue(-50);
+    //     gameScene->addItem(pathItem);
+    // }
 }
 
 void GamePage::drawGrid()
@@ -460,7 +495,7 @@ void GamePage::showUpgradeEffect(const QPointF &scenePos)
 void GamePage::createPath()
 {
     // 根据地图ID获取路径
-    QVector<GameConfig::GridPoint> gridPoints = GameConfig::MapPaths::PATH_MAP.value(currentMapId, GameConfig::MapPaths::DEFAULT_PATH);
+    QVector<GameConfig::GridPoint> gridPoints = GameConfig::MapPaths::PATH_MAP.value(currentMapId, GameConfig::MapPaths::MAP1_PATH);
     
     // 获取路径点
     const qreal offset = GameConfig::GRID_SIZE / 2 - GameConfig::ENEMY_SIZE / 2;
@@ -488,6 +523,23 @@ void GamePage::startGame()
 
     elapsedTimer.restart();
     pauseButton->setText("暂停");
+    
+    // 确保GamePage及其所有子元素立即显示和更新
+    show();
+    update();
+    repaint();
+    if (gameView)
+    {
+        gameView->update();
+        gameView->repaint();
+        gameView->viewport()->update();
+        gameView->viewport()->repaint();
+    }
+    if (gameScene)
+    {
+        gameScene->update();
+    }
+    
     gameManager->startGame();
 }
 
@@ -549,12 +601,25 @@ void GamePage::resetGame()
 
 void GamePage::showGameOverDialog()
 {
+    if (gameManager)
+    {
+        pauseAllEnemies();
+        pauseAllTowersAndBullets();
+    }
+
     if (resultOverlay)
     {
         resultOverlay->deleteLater();
         resultOverlay = nullptr;
         resultPanel = nullptr;
     }
+
+    // 移除任何图形效果以防止 painter 冲突
+    setGraphicsEffect(nullptr);
+    update();
+    repaint();
+
+    saveLevelProgress(false);
 
     resultOverlay = new QWidget(this);
     resultOverlay->setGeometry(0, 0, width(), height());
@@ -745,6 +810,136 @@ void GamePage::showGameOverDialog()
 
     resultOverlay->show();
     resultPanel->show();
+}
+
+void GamePage::showLevelCompleteDialog()
+{
+    if (gameManager)
+    {
+        pauseAllEnemies();
+        pauseAllTowersAndBullets();
+    }
+
+    if (resultOverlay)
+    {
+        resultOverlay->deleteLater();
+        resultOverlay = nullptr;
+        resultPanel = nullptr;
+    }
+
+    // 移除任何图形效果以防止 painter 冲突
+    setGraphicsEffect(nullptr);
+    update();
+    repaint();
+
+    saveLevelProgress(true);
+
+    resultOverlay = new QWidget(this);
+    resultOverlay->setGeometry(0, 0, width(), height());
+    resultOverlay->setStyleSheet("background-color: rgba(0, 0, 0, 180);");
+    resultOverlay->setAttribute(Qt::WA_TransparentForMouseEvents, false);
+
+    resultPanel = new QWidget(resultOverlay);
+    resultPanel->setFixedSize(500, 360);
+    resultPanel->setStyleSheet(
+        "QWidget {"
+        "   background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #ffffff, stop:1 #f5f5f5);"
+        "   border-radius: 20px;"
+        "   border: 1px solid #2ecc71;"
+        "}"
+    );
+    resultPanel->move((width() - resultPanel->width()) / 2, (height() - resultPanel->height()) / 2);
+
+    QVBoxLayout *layout = new QVBoxLayout(resultPanel);
+    layout->setContentsMargins(36, 48, 36, 48);
+    layout->setSpacing(20);
+
+    QLabel *titleLabel = new QLabel("关卡完成", resultPanel);
+    titleLabel->setAlignment(Qt::AlignCenter);
+    titleLabel->setFont(QFont("Microsoft YaHei", 32, QFont::Bold));
+    titleLabel->setStyleSheet("color: #27ae60;");
+    titleLabel->setMinimumHeight(48);
+    layout->addWidget(titleLabel);
+
+    int wave = gameManager ? gameManager->getCurrentWave() : 1;
+    int kill = gameManager ? gameManager->getKillCount() : 0;
+
+    QLabel *infoLabel = new QLabel(QString("成功防守到第 %1 波，击败 %2 名敌人").arg(wave).arg(kill), resultPanel);
+    infoLabel->setAlignment(Qt::AlignCenter);
+    infoLabel->setFont(QFont("Microsoft YaHei", 16, QFont::Normal));
+    infoLabel->setStyleSheet("color: #34495e; padding: 8px 0px;");
+    layout->addWidget(infoLabel);
+
+    QLabel *tipLabel = new QLabel("3 秒后自动返回关卡选择界面", resultPanel);
+    tipLabel->setAlignment(Qt::AlignCenter);
+    tipLabel->setFont(QFont("Microsoft YaHei", 14, QFont::Normal));
+    tipLabel->setStyleSheet("color: #7f8c8d; padding: 4px 0px;");
+    layout->addWidget(tipLabel);
+
+    QTimer::singleShot(3000, this, [this]() {
+        if (resultOverlay)
+        {
+            resultOverlay->deleteLater();
+            resultOverlay = nullptr;
+            resultPanel = nullptr;
+        }
+        emit returnToMainMenu();
+    });
+
+    resultOverlay->show();
+    resultPanel->show();
+}
+
+void GamePage::saveLevelProgress(bool levelCompleted)
+{
+    if (!gameManager)
+        return;
+
+    int wave = gameManager->getCurrentWave();
+
+    // 使用组织名和应用名来初始化 QSettings
+    QSettings settings("TowerDefenseStudio", "TowerDefenseGame");
+
+    QString mapKey = QString("levels/map_%1").arg(static_cast<int>(currentMapId));
+    int bestWave = settings.value(mapKey + "/bestWave", 0).toInt();
+    qDebug() << "[LevelProgress] Current wave:" << wave << "Best wave before:" << bestWave;
+    
+    if (wave > bestWave)
+    {
+        settings.setValue(mapKey + "/bestWave", wave);
+        qDebug() << "[LevelProgress] Update bestWave for" << mapKey << "to" << wave;
+    }
+
+    if (levelCompleted)
+    {
+        int unlockedMaxIndex = settings.value("levels/unlocked_max_index", 0).toInt();
+        int currentIndex = static_cast<int>(currentMapId);
+        qDebug() << "[LevelProgress] levelCompleted on map index" << currentIndex
+                 << "current unlocked_max_index =" << unlockedMaxIndex;
+
+        int nextIndex = currentIndex + 1;
+        int maxIndex = static_cast<int>(GameConfig::MAP2);
+
+        if (nextIndex <= maxIndex && nextIndex > unlockedMaxIndex)
+        {
+            settings.setValue("levels/unlocked_max_index", nextIndex);
+            qDebug() << "[LevelProgress] Unlock next level index" << nextIndex;
+        }
+        else
+        {
+            qDebug() << "[LevelProgress] No new level to unlock. nextIndex =" << nextIndex
+                     << "maxIndex =" << maxIndex;
+        }
+    }
+
+    // 立即同步数据到存储
+    settings.sync();
+    
+    // 验证数据是否正确保存
+    QSettings verifySettings("TowerDefenseStudio", "TowerDefenseGame");
+    int verifyUnlocked = verifySettings.value("levels/unlocked_max_index", -1).toInt();
+    int verifyWave = verifySettings.value(QString("levels/map_%1").arg(static_cast<int>(currentMapId)) + "/bestWave", -1).toInt();
+    qDebug() << "[LevelProgress] Verify after save - unlocked_max_index:" << verifyUnlocked << "bestWave:" << verifyWave;
 }
 
 void GamePage::mousePressEvent(QMouseEvent *event)
