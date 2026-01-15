@@ -6,6 +6,7 @@
 #include "config.h"
 #include <QTimer>
 #include <QVector>
+#include <QElapsedTimer>
 
 class Enemy : public GameEntity
 {
@@ -32,6 +33,13 @@ public:
     void pauseMovement() { if (moveTimer) moveTimer->stop(); }
     void resumeMovement() { if (moveTimer && currentState != ResourceManager::ENEMY_DEAD) moveTimer->start(GameConfig::ENEMY_MOVE_INTERVAL); }
 
+    void setHighlighted(bool highlighted) { isHighlighted = highlighted; }
+    bool getHighlighted() const { return isHighlighted; }
+
+protected:
+    void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = nullptr) override;
+    QRectF boundingRect() const override;
+
 private slots:
     void onMoveTimer();
 signals:
@@ -46,6 +54,7 @@ private:
     int currentPathIndex;
     QTimer *moveTimer;
     bool reachedEnd;
+    bool isHighlighted;
 };
 
 #endif

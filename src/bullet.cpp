@@ -124,33 +124,41 @@ void Bullet::onMoveTimer()
                 dir /= dirLen;
 
             qreal dot = dir.x() * desiredDir.x() + dir.y() * desiredDir.y();
-            if (dot > 1.0)
-                dot = 1.0;
-            else if (dot < -1.0)
-                dot = -1.0;
 
-            qreal angle = std::acos(dot);
-            qreal maxTurnDeg = 10.0;
-            qreal maxTurnRad = maxTurnDeg * M_PI / 180.0;
-
-            if (angle > 0.0001)
+            // 优化：如果角度大于 90 度（dot < 0），则停止跟踪，否则转弯会过急
+            if (dot < 0)
             {
-                qreal turn = angle;
-                if (turn > maxTurnRad)
-                    turn = maxTurnRad;
+                // 停止追踪，直线飞行
+                target = nullptr;
+                hasTarget = false;
+            }
+            else
+            {
+                if (dot > 1.0) dot = 1.0;
+                
+                qreal angle = std::acos(dot);
+                qreal maxTurnDeg = 15.0; // 增加最大转弯角度
+                qreal maxTurnRad = maxTurnDeg * M_PI / 180.0;
 
-                qreal cross = dir.x() * desiredDir.y() - dir.y() * desiredDir.x();
-                qreal sign = cross >= 0.0 ? 1.0 : -1.0;
+                if (angle > 0.0001)
+                {
+                    qreal turn = angle;
+                    if (turn > maxTurnRad)
+                        turn = maxTurnRad;
 
-                qreal c = std::cos(turn);
-                qreal s = std::sin(turn) * sign;
+                    qreal cross = dir.x() * desiredDir.y() - dir.y() * desiredDir.x();
+                    qreal sign = cross >= 0.0 ? 1.0 : -1.0;
 
-                QPointF newDir(dir.x() * c - dir.y() * s,
-                               dir.x() * s + dir.y() * c);
+                    qreal c = std::cos(turn);
+                    qreal s = std::sin(turn) * sign;
 
-                qreal newLen = std::sqrt(newDir.x() * newDir.x() + newDir.y() * newDir.y());
-                if (newLen > 0.0)
-                    direction = newDir / newLen;
+                    QPointF newDir(dir.x() * c - dir.y() * s,
+                                   dir.x() * s + dir.y() * c);
+
+                    qreal newLen = std::sqrt(newDir.x() * newDir.x() + newDir.y() * newDir.y());
+                    if (newLen > 0.0)
+                        direction = newDir / newLen;
+                }
             }
         }
     }

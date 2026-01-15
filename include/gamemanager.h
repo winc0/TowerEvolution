@@ -1,17 +1,16 @@
 #ifndef GAMEMANAGER_H
 #define GAMEMANAGER_H
 
+#include "enemy.h"
+#include "tower.h"
+#include "bullet.h"
+#include "config.h"
 #include <QObject>
 #include <QList>
 #include <QPointer>
 #include <QTimer>
 #include <QVector>
 #include <QPointF>
-
-#include "enemy.h"
-#include "tower.h"
-#include "bullet.h"
-#include "config.h"
 
 class GameManager : public QObject
 {

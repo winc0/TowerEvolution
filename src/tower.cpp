@@ -10,8 +10,11 @@
 #include <QGraphicsScene>
 #include <QGraphicsPixmapItem>
 #include <QDebug>
+#include <QDateTime>
+#include <QTimer>
 #include <math.h>
 #include <cmath>
+#include <limits>
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -25,25 +28,26 @@ Tower::Tower(TowerType type, QPointF position, QObject *parent)
       baseItem(nullptr),
       currentRotation(0.0),
       targetRotation(0.0),
-      rotationSpeed(5.0),
-      targetLocked(false)
+      rotationSpeed(45.0), // 防御塔旋转速度（度/秒）
+      targetLocked(false),
+      targetLostTime(0)
 {
-    // 设置基础属性
+    // 根据防御塔类型设置基础属性（伤害、射程、价格、攻速）
     switch (type)
     {
-    case ARROW_TOWER:
+    case ARROW_TOWER: // 箭塔
         damage = GameConfig::TowerStats::ARROW_DAMAGE;
         range = GameConfig::TowerStats::ARROW_RANGE;
         cost = GameConfig::TowerStats::ARROW_COST;
         fireRate = GameConfig::TowerStats::ARROW_FIRE_RATE;
         break;
-    case CANNON_TOWER:
+    case CANNON_TOWER: // 炮塔
         damage = GameConfig::TowerStats::CANNON_DAMAGE;
         range = GameConfig::TowerStats::CANNON_RANGE;
         cost = GameConfig::TowerStats::CANNON_COST;
         fireRate = GameConfig::TowerStats::CANNON_FIRE_RATE;
         break;
-    case MAGIC_TOWER:
+    case MAGIC_TOWER: // 魔法塔
         damage = GameConfig::TowerStats::MAGIC_DAMAGE;
         range = GameConfig::TowerStats::MAGIC_RANGE;
         cost = GameConfig::TowerStats::MAGIC_COST;
@@ -51,6 +55,7 @@ Tower::Tower(TowerType type, QPointF position, QObject *parent)
         break;
     }
 
+    // 获取视觉等级（用于加载对应的图片资源）
     int visualLevel = 1;
     switch (type)
     {
@@ -65,33 +70,34 @@ Tower::Tower(TowerType type, QPointF position, QObject *parent)
         break;
     }
 
+    // 从资源管理器加载防御塔和底座的像素图
     ResourceManager &rm = ResourceManager::instance();
     QPixmap towerPixmap = rm.getTowerPixmapForType(static_cast<int>(type), visualLevel);
     QPixmap basePixmap = rm.getTowerBasePixmapForType(static_cast<int>(type), visualLevel);
 
+    // 设置防御塔的像素图并设置旋转中心
     setPixmap(towerPixmap);
-    // 设置图片的中心为旋转中心
     setTransformOriginPoint(towerPixmap.width() / 2.0, towerPixmap.height() / 2.0);
-
     setPos(position);
 
-    // 创建底座图形项（在塔下层）
+    // 创建并设置底座图形项（Z值低于防御塔，显示在下层）
     baseItem = new QGraphicsPixmapItem(basePixmap);
-    baseItem->setPos(position.x() /* - basePixmap.width() / 2.0 */, position.y() /* - basePixmap.height() / 2.0 */);
-    baseItem->setZValue(-1); // 底座在塔下层
+    baseItem->setPos(position.x(), position.y());
+    baseItem->setZValue(-1); // 底座在防御塔下层
 
-    // 攻击计时器
+    // 初始化攻击定时器
     attackTimer = new QTimer(this);
     connect(attackTimer, &QTimer::timeout, this, &Tower::onAttackTimer);
     attackTimer->start(fireRate);
 
+    // 初始化防御塔生命值
     setHealth(100);
 }
 
 Tower::~Tower()
 {
     attackTimer->stop();
-    // 清理底座
+    // 清理底座图形项
     if (baseItem && baseItem->scene())
     {
         baseItem->scene()->removeItem(baseItem);
@@ -101,17 +107,13 @@ Tower::~Tower()
 
 void Tower::update()
 {
+    // 更新目标锁定状态
     updateTargetLock();
-    if (!currentTarget)
-    {
-        findTarget();
-    }
+    // 查找新目标（内部处理延迟）
+    findTarget();
 
-    // 更新塔的旋转角度
-    if (currentTarget)
-    {
-        updateTowerRotation();
-    }
+    // 每帧更新防御塔旋转（处理回到零度的情况）
+    updateTowerRotation();
 }
 
 void Tower::setTarget(QPointer<Enemy> target)
@@ -123,13 +125,14 @@ void Tower::fire()
 {
     if (currentTarget && gameScene)
     {
+        // 获取防御塔炮管顶端的位置（场景坐标）
         QRectF rect = boundingRect();
         QPointF localTip(rect.width() / 2.0, 0.0);
         QPointF bulletStartPos = mapToScene(localTip);
 
         qDebug() << "Tower firing from tip" << bulletStartPos;
 
-        // 创建子弹对象
+        // 根据防御塔类型确定子弹类型
         Bullet::BulletType bulletType = Bullet::BULLET_ARROW;
         switch (towerType)
         {
@@ -144,10 +147,12 @@ void Tower::fire()
             break;
         }
 
+        // 计算子弹初速度方向（根据防御塔旋转角度）
         qreal angleDeg = rotation() - 90.0;
         qreal angleRad = angleDeg * M_PI / 180.0;
         QPointF initialDir(std::cos(angleRad), std::sin(angleRad));
 
+        // 创建子弹对象
         QPointer<Bullet> bullet = new Bullet(bulletType, bulletStartPos, initialDir, currentTarget, damage, nullptr);
         if (bullet)
         {
@@ -165,24 +170,38 @@ void Tower::fire()
 
 void Tower::setEnemiesInRange(const QList<QPointer<Enemy>> &enemies)
 {
+    qint64 now = QDateTime::currentMSecsSinceEpoch();
+
+    // 从追踪表中清除无效或超出范围的敌人
+    auto it = enemyEntryTimes.begin();
+    while (it != enemyEntryTimes.end()) {
+        if (!it.key() || !enemies.contains(it.key())) {
+            it = enemyEntryTimes.erase(it);
+        } else {
+            ++it;
+        }
+    }
+
+    // 添加新敌人并记录进入时间
+    for (const auto& enemy : enemies) {
+        if (enemy && !enemyEntryTimes.contains(enemy)) {
+            enemyEntryTimes.insert(enemy, now);
+        }
+    }
+
+    // 更新范围内的敌人列表
     enemiesInRange = enemies;
-    findTarget();
+    // 目标查找在 update() 中处理
 }
 
 void Tower::onAttackTimer()
 {
+    // 检查当前目标是否仍在射程内
     if (currentTarget && isInRange(currentTarget))
     {
         fire();
     }
-    else
-    {
-        findTarget();
-        if (currentTarget)
-        {
-            fire();
-        }
-    }
+    // 目标查找在每帧的 update() 函数中处理
 }
 
 bool Tower::isInRange(QPointer<Enemy> enemy) const
@@ -190,81 +209,142 @@ bool Tower::isInRange(QPointer<Enemy> enemy) const
     if (!enemy)
         return false;
 
+    // 计算防御塔与敌人之间的距离
     qreal dx = enemy->x() - this->x();
     qreal dy = enemy->y() - this->y();
-    qreal distance = std::sqrt(dx * dx + dy * dy); // 使用 std::sqrt
+    qreal distance = std::sqrt(dx * dx + dy * dy);
 
     return distance <= range;
 }
 
 void Tower::findTarget()
 {
-    QPointer<Enemy> closestEnemy = nullptr;
-    qreal minDistance = range + 1; // 初始化为超出范围
+    qint64 now = QDateTime::currentMSecsSinceEpoch();
 
-    for (QPointer<Enemy> enemy : enemiesInRange)
+    // 1. 检查当前目标是否仍然有效且在射程内
+    if (currentTarget)
+    {
+        if (currentTarget.isNull() || !isInRange(currentTarget))
+        {
+            // 目标丢失
+            targetLostTime = now;
+            if (currentTarget && !currentTarget.isNull())
+            {
+                currentTarget->setHighlighted(false);
+            }
+            currentTarget = nullptr;
+            targetLocked = false;
+        }
+        else
+        {
+            // 目标仍然有效，继续追踪
+            return;
+        }
+    }
+
+    // 2. 检查重新扫描延迟（200ms）
+    if (now - targetLostTime < 200)
+    {
+        return;
+    }
+
+    // 3. 查找新目标（优先选择最早进入的敌人）
+    QPointer<Enemy> bestCandidate = nullptr;
+    qint64 earliestTime = std::numeric_limits<qint64>::max();
+
+    for (const auto& enemy : enemiesInRange)
     {
         if (enemy && isInRange(enemy))
         {
-            qreal dx = enemy->x() - this->x();
-            qreal dy = enemy->y() - this->y();
-            qreal distance = std::sqrt(dx * dx + dy * dy); // 使用 std::sqrt
-
-            if (distance < minDistance)
+            if (enemyEntryTimes.contains(enemy))
             {
-                minDistance = distance;
-                closestEnemy = enemy;
+                qint64 time = enemyEntryTimes.value(enemy);
+                if (time < earliestTime)
+                {
+                    earliestTime = time;
+                    bestCandidate = enemy;
+                }
             }
         }
     }
 
-    currentTarget = closestEnemy;
+    // 锁定新目标
+    if (bestCandidate)
+    {
+        currentTarget = bestCandidate;
+        targetLocked = true;
+        if (currentTarget && !currentTarget.isNull())
+        {
+            currentTarget->setHighlighted(true);
+        }
+    }
 }
 
 void Tower::updateTowerRotation()
 {
+    // 自动旋转：无目标时回到默认角度（0度）
     if (!currentTarget)
-        return;
+    {
+        targetRotation = 0.0;
+    }
+    else
+    {
+        // 计算防御塔指向目标的旋转角度
+        QPointF towerPos = pos();
+        QRectF rect = boundingRect();
+        QPointF towerCenter(towerPos.x() + rect.width() / 2.0, towerPos.y() + rect.height() / 2.0);
+        QPointF targetCenter = currentTarget->getCenterPosition();
+        QPointF direction = targetCenter - towerCenter;
 
-    QPointF towerPos = pos();
-    QRectF rect = boundingRect();
-    QPointF towerCenter(towerPos.x() + rect.width() / 2.0, towerPos.y() + rect.height() / 2.0);
-    QPointF targetCenter = currentTarget->getCenterPosition();
-    QPointF direction = targetCenter - towerCenter;
+        // 计算目标方向角度
+        qreal angle = std::atan2(direction.y(), direction.x()) * 180.0 / M_PI;
+        angle += 90.0; // 根据图片方向调整
+        targetRotation = angle;
+    }
 
-    // 计算角度（atan2返回的角度是相对于x轴的，单位是弧度）
-    // 由于图片默认向上，我们需要调整
-    qreal angle = std::atan2(direction.y(), direction.x()) * 180.0 / M_PI;
-
-    // 调整90度（因为图片向上，需要从0度旋转90度）
-    angle += 90.0;
-
-    targetRotation = angle;
-
+    // 旋转插值逻辑（平滑旋转）
     qreal delta = targetRotation - currentRotation;
+    // 处理角度环绕（确保旋转最短路径）
     while (delta > 180.0)
         delta -= 360.0;
     while (delta < -180.0)
         delta += 360.0;
 
-    qreal maxStep = rotationSpeed;
-    if (delta > maxStep)
-        delta = maxStep;
-    else if (delta < -maxStep)
-        delta = -maxStep;
+    // 计算单帧旋转步长
+    // rotationSpeed 单位为 deg/s，update() 约 16ms 执行一次 (60fps)
+    qreal stepPerFrame = rotationSpeed * 0.016; 
+    
+    // 平滑旋转至目标角度
+    if (std::abs(delta) < stepPerFrame)
+    {
+        currentRotation = targetRotation;
+    }
+    else
+    {
+        if (delta > 0)
+            currentRotation += stepPerFrame;
+        else
+            currentRotation -= stepPerFrame;
+    }
 
-    currentRotation += delta;
+    // 设置防御塔旋转
     setRotation(currentRotation);
 
+    // 更新底座显示
     if (baseItem && scene())
         baseItem->update();
 }
 
 void Tower::updateTargetLock()
 {
+    // 检查当前目标是否已超出射程
     if (currentTarget && !isInRange(currentTarget))
+    {
+        currentTarget->setHighlighted(false);
         currentTarget = nullptr;
+    }
 
+    // 更新目标锁定状态
     if (targetLocked)
     {
         if (!currentTarget)
@@ -272,6 +352,7 @@ void Tower::updateTargetLock()
             targetLocked = false;
             return;
         }
+        // 如果锁定时间超过 400ms 则解除锁定
         if (targetLockTimer.isValid() &&
             targetLockTimer.hasExpired(400))
         {

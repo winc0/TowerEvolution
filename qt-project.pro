@@ -19,7 +19,8 @@ SOURCES += \
     src/resourcemanager.cpp \
     src/tower.cpp \
     src/bullet.cpp \
-    src/placementvalidator.cpp
+    src/placementvalidator.cpp \
+    src/quadtree.cpp
 
 HEADERS += \
     include/config.h \
@@ -32,7 +33,8 @@ HEADERS += \
     include/resourcemanager.h \
     include/tower.h \
     include/bullet.h \
-    include/placementvalidator.h
+    include/placementvalidator.h \
+    include/quadtree.h
 
 FORMS += \
     ui/mainwindow.ui

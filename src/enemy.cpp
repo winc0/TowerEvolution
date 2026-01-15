@@ -15,6 +15,7 @@ Enemy::Enemy(int enemyType, QObject *parent)
     , currentPathIndex(0)
     , reachedEnd(false)
     , currentState(ResourceManager::ENEMY_WALK)
+    , isHighlighted(false)
 {
     setHealth(GameConfig::ENEMY_HEALTH);
 
@@ -85,6 +86,31 @@ void Enemy::moveAlongPath()
 void Enemy::onMoveTimer()
 {
     moveAlongPath();
+}
+
+void Enemy::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
+{
+    QGraphicsPixmapItem::paint(painter, option, widget);
+
+    if (isHighlighted)
+    {
+        painter->save();
+        QPen pen(QColor(255, 215, 0, 200));
+        pen.setWidth(3);
+        painter->setPen(pen);
+        painter->setBrush(Qt::NoBrush);
+        qreal pad = 2;
+        QRectF rect = QGraphicsPixmapItem::boundingRect();
+        painter->drawEllipse(rect.adjusted(-pad, -pad, pad, pad));
+        painter->restore();
+    }
+}
+
+QRectF Enemy::boundingRect() const
+{
+    QRectF rect = QGraphicsPixmapItem::boundingRect();
+    qreal pad = 2;
+    return rect.adjusted(-pad, -pad, pad, pad);
 }
 
 void Enemy::setState(EnemyState state)

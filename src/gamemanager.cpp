@@ -1,5 +1,6 @@
 #include "include/gamemanager.h"
 #include "include/resourcemanager.h"
+#include "include/quadtree.h"
 
 #include <cmath>
 #include <QRandomGenerator>
@@ -179,27 +180,53 @@ void GameManager::updateEnemies()
 
 void GameManager::updateTowers()
 {
+    // 使用四叉树优化塔台更新
+    QRectF mapBounds(0, 0, GameConfig::WINDOW_WIDTH, GameConfig::WINDOW_HEIGHT);
+    Quadtree quadtree(mapBounds, 4); // 将四叉树划分为四个区域，每个区域最多可容纳 4 个敌人
+
+    // 将所有活着的敌人插入四叉树
+    for (QPointer<Enemy> enemy : enemies)
+    {
+        if (enemy)
+        {
+            quadtree.insert(enemy);
+        }
+    }
+
+    // 遍历所有塔并更新它们
     for (QPointer<Tower> tower : towers)
     {
         if (!tower)
             continue;
 
+        // 计算该塔的射程
+        qreal range = tower->getRange();
+        QRectF queryRect(tower->x() - range, tower->y() - range, range * 2, range * 2);
+
+        // 查询四叉树以查找防御塔范围内的所有敌人
+        QList<Enemy*> potentialEnemies;
+        quadtree.query(queryRect, potentialEnemies);
+
+        // 创建一份位于防御塔射程内的敌人列表
         QList<QPointer<Enemy>> enemiesInRange;
-        for (QPointer<Enemy> enemy : enemies)
+        for (Enemy* rawEnemy : potentialEnemies)
         {
+            QPointer<Enemy> enemy(rawEnemy);
             if (!enemy)
                 continue;
 
+            // 使用距离的平方来检查敌人是否在防御塔的射程内
             qreal dx = enemy->x() - tower->x();
             qreal dy = enemy->y() - tower->y();
-            qreal distance = std::sqrt(dx * dx + dy * dy);
+            qreal distSq = dx * dx + dy * dy;
 
-            if (distance <= tower->getRange())
+            if (distSq <= range * range)
             {
                 enemiesInRange.append(enemy);
             }
         }
 
+        // 将敌人置于防御塔的攻击范围内，并更新防御塔
         tower->setEnemiesInRange(enemiesInRange);
         tower->update();
     }

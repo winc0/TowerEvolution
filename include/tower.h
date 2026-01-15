@@ -67,6 +67,8 @@ private:
     QPointer<Enemy> currentTarget; // 当前攻击目标
     QTimer *attackTimer;
     QList<QPointer<Enemy>> enemiesInRange;
+    QMap<Enemy*, qint64> enemyEntryTimes; // 记录敌人进入范围的时间
+    qint64 targetLostTime; // 目标丢失的时间戳
     QGraphicsScene *gameScene;
 
     QGraphicsPixmapItem *baseItem; // 底座图形
