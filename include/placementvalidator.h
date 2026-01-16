@@ -6,23 +6,24 @@
 #include <QPair>
 #include <QVector>
 
+// 校验建塔位置是否合法
 class PlacementValidator
 {
 public:
+    // 构造放置校验器实例
     PlacementValidator();
     
     // 加载允许放置的网格配置
     void loadConfig(const QVector<GameConfig::GridPoint>& allowedGrids);
     
-    // 检查指定像素坐标是否允许放置
-    // gridX, gridY 是已经对齐网格的像素坐标，或者直接是像素坐标
+    // 检查给定像素坐标能否建塔
     bool isPlacementAllowed(int pixelX, int pixelY) const;
     
-    // 获取所有允许放置的网格索引 (x, y)
+    // 获取所有允许放置的网格索引
     const QSet<QPair<int, int>>& getAllowedGrids() const;
 
 private:
-    // 存储允许放置的网格索引 (gridIndexX, gridIndexY)
+    // 存储允许放置的网格索引
     QSet<QPair<int, int>> allowedGrids;
     int gridSize;
 };
